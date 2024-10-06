@@ -63,11 +63,11 @@ const App=()=>{
             console.log(data)
             setChatHistory(oldChatHistory=>[...oldChatHistory, {
                 role: "user",
-                parts: value
+                parts: [value]
             },
                 {
                     role: "model",
-                    parts: data
+                    parts: [data]
                 }
             ])
             setValue("")
