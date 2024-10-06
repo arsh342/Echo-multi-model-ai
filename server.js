@@ -11,23 +11,27 @@ const https=require("node:https");
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEN_AI_KEY)
 
 app.post('/gemini', async (req, res) => {
-    console.log(req.body.history)
-    console.log(req.body.message)
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
-    const chat = model.startChat({
-        history: req.body.history.map(msg => ({
-            role: msg.role,
-            parts: msg.parts
-        }))
-    })
-    const message = req.body.message
+    try {
+        console.log(req.body.history);
+        console.log(req.body.message);
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const chat = model.startChat({
+            history: req.body.history.map(msg => ({
+                role: msg.role,
+                parts: msg.parts
+            }))
+        });
+        const message = req.body.message;
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        const text = response.text(); // Ensure response.text() is called correctly
+        res.send(text);
+    } catch (error) {
+        console.error('Error processing request:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
-    const result = await chat.sendMessage(message)
-    const response = await result.response
-    const text = response.text()
-    res.send(text)
-
-})
 
 app.get('/', (req, res) =>{
     res.send('Hello World!')
