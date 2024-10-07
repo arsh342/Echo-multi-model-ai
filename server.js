@@ -13,7 +13,7 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEN_AI_KEY)
 app.post('/gemini', async (req, res) => {
     console.log(req.body.history)
     console.log(req.body.message)
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-1.5" })
     const chat = model.startChat({
         history: req.body.history.map(msg => ({
             role: msg.role,
