@@ -1,163 +1,180 @@
 :root {
-    --primary-color: #00a67d;
-    --secondary-color: #004d3d;
-    --background-color: #0f172a;
-    --surface-color: #1e293b;
-    --text-color: #e2e8f0;
-    --border-color: #334155;
-    --shadow-color: rgba(0, 0, 0, 0.5);
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-html {
-    font-size: 16px; /* Desktop base font size */
+    --primary-color: #343541;
+    --secondary-color: #444654;
+    --text-color: #ececf1;
+    --input-bg: #40414f;
+    --border-color: #565869;
+    --button-color: #19c37d;
+    --button-hover: #1a7f5a;
+    --error-color: #ef4146;
 }
 
 body {
-    background-color: var(--background-color);
+    font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--primary-color);
     color: var(--text-color);
-    font-family: 'Roboto Mono', monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 1rem;
+    font-size: 16px;
 }
 
 .app {
-    width: 100%;
-    max-width: 1200px; /* Limit max width for larger screens */
-    height: 90vh;
     display: flex;
     flex-direction: column;
-    background-color: var(--surface-color);
-    border-radius: 0.75rem;
-    box-shadow: 0 0.5rem 2rem var(--shadow-color);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
+    height: 100vh;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
-.search-result {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 1rem;
+.app > p {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1rem;
 }
 
-.button {
-    padding: 0.75rem 1rem;
-    border-radius: 0.375rem;
-    font-weight: 600;
-    background-color: var(--primary-color);
+.surprise {
+    background-color: var(--button-color);
     color: var(--text-color);
     border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.0625rem;
-    font-size: 0.875rem;
-    margin: 0.5rem 0;
+    transition: background-color 0.3s ease;
+    margin-left: 10px;
+    font-size: 0.9rem;
 }
 
-.button:hover {
-    background-color: var(--secondary-color);
+.surprise:hover:not(:disabled) {
+    background-color: var(--button-hover);
+}
+
+.surprise:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .input-container {
     display: flex;
-    border: 1px solid var(--border-color);
-    background-color: var(--surface-color);
-    border-radius: 0.375rem;
-    overflow: hidden;
-    margin: 1rem;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
 .input-container input {
     flex-grow: 1;
-    border: none;
-    padding: 0.75rem;
-    font-size: 1rem;
-    outline: none;
-    background-color: transparent;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--input-bg);
     color: var(--text-color);
+    font-size: 1rem;
+    min-width: 0;
 }
 
 .input-container input::placeholder {
-    color: rgba(226, 232, 240, 0.5);
+    color: #8e8ea0;
 }
 
 .input-container button {
-    padding: 0.75rem 1rem;
-    background-color: var(--primary-color);
+    background-color: var(--button-color);
     color: var(--text-color);
     border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-left: 10px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.0625rem;
+    transition: background-color 0.3s ease;
+    font-size: 1rem;
 }
 
 .input-container button:hover {
+    background-color: var(--button-hover);
+}
+
+.search-result {
+    overflow-y: auto;
+    flex-grow: 1;
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+}
+
+.answer {
     background-color: var(--secondary-color);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    word-wrap: break-word;
 }
 
-/* Responsive breakpoints */
-@media (max-width: 1200px) {
-    html {
-        font-size: 15px; /* Slightly smaller font size for medium screens */
-    }
-
-    .app {
-        padding: 1rem; /* Padding adjustment for smaller screens */
-    }
+.answer:nth-child(odd) {
+    background-color: var(--primary-color);
 }
 
-@media (max-width: 992px) {
-    html {
-        font-size: 14px; /* Smaller font size for smaller tablets */
-    }
+p {
+    margin: 0;
+    line-height: 1.5;
+}
 
-    .app {
-        width: 95%;
-        height: auto; /* Allow height to auto for smaller devices */
-    }
+.error {
+    color: var(--error-color);
+    text-align: center;
+    margin-top: 10px;
+    font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+
+    .app {
+        padding: 15px;
+    }
+
     .input-container {
-        flex-direction: column; /* Stack input and button vertically */
+        flex-direction: column;
     }
 
     .input-container input,
     .input-container button {
-        width: 100%; /* Full width for input and button */
+        width: 100%;
+        margin-left: 0;
+        margin-top: 10px;
     }
 
-    .input-container button {
-        margin-top: 0.5rem; /* Add margin for spacing */
+    .surprise {
+        margin-left: 0;
+        margin-top: 10px;
     }
 }
 
-@media (max-width: 576px) {
-    html {
-        font-size: 12px; /* Smaller font size for smartphones */
+@media (max-width: 480px) {
+    body {
+        font-size: 12px;
     }
 
     .app {
-        padding: 0.5rem; /* Reduced padding */
+        padding: 10px;
     }
 
-    .search-result {
-        padding: 0.5rem; /* Reduced padding for search results */
+    .app > p {
+        font-size: 0.9rem;
+    }
+
+    .surprise {
+        font-size: 0.8rem;
+    }
+
+    .input-container input,
+    .input-container button {
+        font-size: 0.9rem;
     }
 }
 
-@media (max-width: 360px) {
-    html {
-        font-size: 10px; /* Smallest font size for very small devices */
+@media (max-height: 600px) {
+    .app {
+        height: auto;
+        min-height: 100vh;
     }
 }
