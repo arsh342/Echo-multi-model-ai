@@ -7,7 +7,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai')
 
 // CORS configuration - replace with your frontend domain
 app.use(cors({
-    origin: 'https://mira-uz0m.onrender.com/'
+    origin: 'https://mira-uz0m.onrender.com'
 }))
 app.use(express.json())
 

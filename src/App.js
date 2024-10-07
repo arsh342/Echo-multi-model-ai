@@ -8,32 +8,19 @@ const App = () => {
     const chatEndRef = useRef(null);
 
     const surpriseOptions = [
-        'Who won the latest Nobel Peace Prize?',
-        'Where does pizza come from?',
-        'What are the top tourist attractions in Paris?',
-        'How do you bake a chocolate cake?',
-        'What is the capital of Japan?',
-        'Tell me a fun fact about space.',
-        'Who invented the telephone?',
-        'What is the most popular programming language in 2024?',
-        'How do you meditate effectively?',
-        'What are the health benefits of yoga?',
-        'Tell me a joke.',
-        'What is the history of the Internet?',
-        'What are the main ingredients in sushi?',
-        'How does photosynthesis work?',
-        'What are some tips for improving public speaking skills?',
-        'What is the tallest mountain in the world?',
-        'How do electric cars work?',
-        'What is the significance of the Mona Lisa?',
-        'Who was the first person to walk on the moon?',
-        'What are the benefits of learning a second language?',
-        'How can you reduce your carbon footprint?',
-        'What is blockchain technology?',
-        'Tell me a famous quote by Albert Einstein.',
-        'What are the symptoms of the flu?',
-        'What is the origin of the Olympic Games?',
-        'How do you start a vegetable garden?',
+        'Who won the latest Nobel Peace Prize?', 'Where does pizza come from?',
+        'What are the top tourist attractions in Paris?', 'How do you bake a chocolate cake?',
+        'What is the capital of Japan?', 'Tell me a fun fact about space.',
+        'Who invented the telephone?', 'What is the most popular programming language in 2024?',
+        'How do you meditate effectively?', 'What are the health benefits of yoga?',
+        'Tell me a joke.', 'What is the history of the Internet?',
+        'What are the main ingredients in sushi?', 'How does photosynthesis work?',
+        'What are some tips for improving public speaking skills?', 'What is the tallest mountain in the world?',
+        'How do electric cars work?', 'What is the significance of the Mona Lisa?',
+        'Who was the first person to walk on the moon?', 'What are the benefits of learning a second language?',
+        'How can you reduce your carbon footprint?', 'What is blockchain technology?',
+        'Tell me a famous quote by Albert Einstein.', 'What are the symptoms of the flu?',
+        'What is the origin of the Olympic Games?', 'How do you start a vegetable garden?',
         'What is the difference between AI and machine learning?'
     ];
 
@@ -43,6 +30,17 @@ const App = () => {
         getResponse(randomValue);
     };
 
+    const fetchOptions = (inputValue) => ({
+        method: "POST",
+        body: JSON.stringify({
+            history: chatHistory,
+            message: inputValue,
+        }),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
     const getResponse = async (inputValue = value) => {
         if (!inputValue.trim()) {
             setError("Please enter a question.");
@@ -51,29 +49,13 @@ const App = () => {
         setIsLoading(true);
         setError("");
         try {
-            const options = {
-                method: "POST",
-                body: JSON.stringify({
-                    history: chatHistory,
-                    message: inputValue,
-                }),
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            };
-            const response = await fetch("https://mira-api-ai.vercel.app/gemini", options);
+            const response = await fetch("https://mira-api-ai.vercel.app/gemini", fetchOptions(inputValue));
             const data = await response.text();
 
             setChatHistory((oldChatHistory) => [
                 ...oldChatHistory,
-                {
-                    role: "user",
-                    parts: inputValue
-                },
-                {
-                    role: "Mira",
-                    parts: data
-                }
+                { role: "user", parts: inputValue },
+                { role: "Mira", parts: data }
             ]);
             setValue("");
         } catch (error) {
@@ -127,7 +109,7 @@ const App = () => {
                 />
                 <button onClick={() => getResponse()} disabled={isLoading}>Ask me</button>
                 <button className="surprise" onClick={surprise} disabled={isLoading}>Surprise me!</button>
-                <button onClick={clear} disabled={isLoading}>Clear</button>
+                <button onClick={clear} disabled={!chatHistory.length || isLoading}>Clear</button>
             </div>
         </div>
     );
