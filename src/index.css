@@ -28,37 +28,56 @@ body {
     box-sizing: border-box;
 }
 
-.app > p {
-    text-align: center;
+.search-result {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     margin-bottom: 20px;
-    font-size: 1rem;
+    border-radius: 8px;
+    background-color: var(--secondary-color);
 }
 
-.surprise {
-    background-color: var(--button-color);
-    color: var(--text-color);
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-left: 10px;
-    font-size: 0.9rem;
+.chat-item {
+    background-color: var(--primary-color);
+    padding: 15px;
+    border-radius: 8px;
+    word-wrap: break-word;
 }
 
-.surprise:hover:not(:disabled) {
-    background-color: var(--button-hover);
+.answer {
+    margin: 0;
+    line-height: 1.5;
 }
 
-.surprise:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.loading-spinner {
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--button-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .input-container {
     display: flex;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
 }
 
 .input-container input {
@@ -69,7 +88,6 @@ body {
     background-color: var(--input-bg);
     color: var(--text-color);
     font-size: 1rem;
-    min-width: 0;
 }
 
 .input-container input::placeholder {
@@ -82,38 +100,18 @@ body {
     border: none;
     padding: 10px 15px;
     border-radius: 4px;
-    margin-left: 10px;
     cursor: pointer;
     transition: background-color 0.3s ease;
     font-size: 1rem;
 }
 
-.input-container button:hover {
+.input-container button:hover:not(:disabled) {
     background-color: var(--button-hover);
 }
 
-.search-result {
-    overflow-y: auto;
-    flex-grow: 1;
-    border-top: 1px solid var(--border-color);
-    padding-top: 20px;
-}
-
-.answer {
-    background-color: var(--secondary-color);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    word-wrap: break-word;
-}
-
-.answer:nth-child(odd) {
-    background-color: var(--primary-color);
-}
-
-p {
-    margin: 0;
-    line-height: 1.5;
+.input-container button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .error {
@@ -139,13 +137,6 @@ p {
     .input-container input,
     .input-container button {
         width: 100%;
-        margin-left: 0;
-        margin-top: 10px;
-    }
-
-    .surprise {
-        margin-left: 0;
-        margin-top: 10px;
     }
 }
 
@@ -158,23 +149,7 @@ p {
         padding: 10px;
     }
 
-    .app > p {
-        font-size: 0.9rem;
-    }
-
-    .surprise {
-        font-size: 0.8rem;
-    }
-
-    .input-container input,
-    .input-container button {
-        font-size: 0.9rem;
-    }
-}
-
-@media (max-height: 600px) {
-    .app {
-        height: auto;
-        min-height: 100vh;
+    .search-result {
+        padding: 10px;
     }
 }

@@ -1,12 +1,12 @@
-import {useState} from "react"
+import { useState } from "react"
 
-const App=()=>{
-    const [value, setValue]=useState("")
-    const [error, setError]=useState("")
-    const [chatHistory, setChatHistory]=useState([])
+const App = () => {
+    const [value, setValue] = useState("")
+    const [error, setError] = useState("")
+    const [chatHistory, setChatHistory] = useState([])
+    const [isLoading, setIsLoading] = useState(false)
 
-
-    const surpriseOptions=[
+    const surpriseOptions = [
         'Who won the latest Nobel Peace Prize?',
         'Where does pizza come from?',
         'What are the top tourist attractions in Paris?',
@@ -36,19 +36,20 @@ const App=()=>{
         'What is the difference between AI and machine learning?'
     ]
 
-
-    const surprise=()=>{
-        const randomValue=surpriseOptions[Math.floor(Math.random() * surpriseOptions.length)]
+    const surprise = () => {
+        const randomValue = surpriseOptions[Math.floor(Math.random() * surpriseOptions.length)]
         setValue(randomValue)
     }
 
-    const getResponse=async ()=>{
+    const getResponse = async () => {
         if (!value.trim()) {
             setError("Please enter a question.")
             return
         }
+        setIsLoading(true)
+        setError("")
         try {
-            const options={
+            const options = {
                 method: "POST",
                 body: JSON.stringify({
                     history: chatHistory,
@@ -58,15 +59,15 @@ const App=()=>{
                     "Content-Type": "application/json"
                 }
             }
-            const response=await fetch("https://mira-api-bans.onrender.com/gemini", options)
-            const data=await response.text()
+            const response = await fetch("https://mira-api-bans.onrender.com/gemini", options)
+            const data = await response.text()
             console.log(data)
-            setChatHistory(oldChatHistory=>[...oldChatHistory, {
+            setChatHistory(oldChatHistory => [...oldChatHistory, {
                 role: "user",
                 parts: [value],
             },
                 {
-                    role: "model",
+                    role: "Mira",
                     parts: [data],
                 }
             ])
@@ -74,35 +75,53 @@ const App=()=>{
         } catch (error) {
             console.error(error)
             setError("An error occurred. Please try again.")
+        } finally {
+            setIsLoading(false)
         }
     }
-    const clear=()=>{
+
+    const clear = () => {
         setValue("")
         setError("")
         setChatHistory([])
     }
 
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            getResponse()
+        }
+    }
+
     return (
         <div className="app">
-            <p>What do you want to know?
-                <button className="surprise" onClick={surprise} disabled={!chatHistory}>Surprise me!</button>
-            </p>
+            <div className="search-result">
+                {chatHistory.map((chatItem, _index) => (
+                    <div key={_index} className="chat-item">
+                        <p className="answer"><strong>{chatItem.role}:</strong> {chatItem.parts}</p>
+                    </div>
+                ))}
+                {isLoading && (
+                    <div className="loading">
+                        <p>Mira is thinking...</p>
+                        <div className="loading-spinner"></div>
+                    </div>
+                )}
+            </div>
+            {error && <p className="error">{error}</p>}
             <div className="input-container">
                 <input
                     value={value}
                     placeholder="ask me anything..."
-                    onChange={(e)=>setValue(e.target.value)}
+                    onChange={(e) => setValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={isLoading}
                 />
-                {!error && <button onClick={getResponse}>Ask me</button>}
-                {error && <button onClick={clear}>Clear</button>}
-            </div>
-            {error && <p>{error}</p>}
-            <div className="search-result">
-                {chatHistory.map((chatItem, _index)=><div key={_index}>
-                    <p className="answer">{chatItem.role} : {chatItem.parts}</p>
-                </div>)}
+                <button onClick={getResponse} disabled={isLoading}>Ask me</button>
+                <button className="surprise" onClick={surprise} disabled={isLoading}>Surprise me!</button>
+                <button onClick={clear} disabled={isLoading}>Clear</button>
             </div>
         </div>
     )
 }
+
 export default App
