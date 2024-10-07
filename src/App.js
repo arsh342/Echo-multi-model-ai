@@ -81,7 +81,7 @@ const App = () => {
                     "Content-Type": "application/json",
                 },
             };
-            const response = await fetch("https://mira-api-ai.vercel.app/gemini", options);
+            const response = await fetch("https://mira-api-ai.vercel.app/", options);
             const data = await response.text();
 
             // Format the API response
