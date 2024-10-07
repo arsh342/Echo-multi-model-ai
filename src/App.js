@@ -81,7 +81,7 @@ const App = () => {
                     "Content-Type": "application/json",
                 },
             };
-            const response = await fetch("https://mira-api-56a1dh9d9-arsh342s-projects.vercel.app/gemini", options);
+            const response = await fetch("https://mira-api-ai.vercel.app/gemini", options);
             const data = await response.text();
 
             // Format the API response
@@ -154,7 +154,7 @@ const App = () => {
                 <button onClick={clear} disabled={isLoading}>Clear</button>
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default App;
+export default App
