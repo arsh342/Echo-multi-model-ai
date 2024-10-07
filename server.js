@@ -29,9 +29,33 @@ app.post('/gemini', async (req, res) => {
 
 })
 
-app.get('/', (req, res) =>{
-    res.send('Hello World!')
-})
+app.get('/', (req, res) => {
+    res.send(`
+        <html>
+            <head>
+                <style>
+                    body {
+                        background-color: black;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                        font-family: Arial, sans-serif;
+                    }
+                    h1 {
+                        color: white;
+                        font-size: 48px;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Running</h1>
+            </body>
+        </html>
+    `);
+});
+
 app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`)
 })
