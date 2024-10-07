@@ -1,10 +1,11 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react";
 
 const App = () => {
-    const [value, setValue] = useState("")
-    const [error, setError] = useState("")
-    const [chatHistory, setChatHistory] = useState([])
-    const [isLoading, setIsLoading] = useState(false)
+    const [value, setValue] = useState("");
+    const [error, setError] = useState("");
+    const [chatHistory, setChatHistory] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const chatEndRef = useRef(null);
 
     const surpriseOptions = [
         'Who won the latest Nobel Peace Prize?',
@@ -34,63 +35,94 @@ const App = () => {
         'What is the origin of the Olympic Games?',
         'How do you start a vegetable garden?',
         'What is the difference between AI and machine learning?'
-    ]
+    ];
 
     const surprise = () => {
-        const randomValue = surpriseOptions[Math.floor(Math.random() * surpriseOptions.length)]
-        setValue(randomValue)
-    }
+        const randomValue = surpriseOptions[Math.floor(Math.random() * surpriseOptions.length)];
+        setValue(randomValue);
+        getResponse(randomValue); // Send the surprise question to the API directly
+    };
 
-    const getResponse = async () => {
-        if (!value.trim()) {
-            setError("Please enter a question.")
-            return
+    const formatResponse = (data) => {
+        let formattedData = data.trim();
+        if (!formattedData.endsWith(".")) {
+            formattedData += ".";
         }
-        setIsLoading(true)
-        setError("")
+        formattedData = formattedData.charAt(0).toUpperCase() + formattedData.slice(1);
+
+        // Shortening if too long
+        if (formattedData.length > 200) {
+            formattedData = formattedData.slice(0, 200) + "...";
+        }
+
+        // Adding a prefix
+        formattedData = "Here’s what I found: " + formattedData;
+
+        return formattedData;
+    };
+
+    const getResponse = async (inputValue) => {
+        const currentValue = inputValue !== undefined ? String(inputValue) : value; // Ensure it's a string
+
+        if (!currentValue.trim()) {
+            setError("Please enter a question.");
+            return;
+        }
+        setIsLoading(true);
+        setError("");
         try {
             const options = {
                 method: "POST",
                 body: JSON.stringify({
                     history: chatHistory,
-                    message: value
+                    message: currentValue,
                 }),
                 headers: {
-                    "Content-Type": "application/json"
-                }
-            }
-            const response = await fetch("https://mira-api-bans.onrender.com/gemini", options)
-            const data = await response.text()
-            console.log(data)
-            setChatHistory(oldChatHistory => [...oldChatHistory, {
-                role: "user",
-                parts: [value],
-            },
+                    "Content-Type": "application/json",
+                },
+            };
+            const response = await fetch("https://mira-api-56a1dh9d9-arsh342s-projects.vercel.app/", options);
+            const data = await response.text();
+
+            // Format the API response
+            const formattedData = formatResponse(data);
+
+            // Update chat history with the formatted response
+            setChatHistory((oldChatHistory) => [
+                ...oldChatHistory,
+                {
+                    role: "user",
+                    parts: [currentValue],
+                },
                 {
                     role: "Mira",
-                    parts: [data],
-                }
-            ])
-            setValue("")
+                    parts: [formattedData],
+                },
+            ]);
+            setValue("");
         } catch (error) {
-            console.error(error)
-            setError("An error occurred. Please try again.")
+            console.error(error);
+            setError("An error occurred. Please try again.");
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     const clear = () => {
-        setValue("")
-        setError("")
-        setChatHistory([])
-    }
+        setValue("");
+        setError("");
+        setChatHistory([]);
+    };
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
-            getResponse()
+            getResponse();
         }
-    }
+    };
+
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [chatHistory]);
 
     return (
         <div className="app">
@@ -106,6 +138,7 @@ const App = () => {
                         <div className="loading-spinner"></div>
                     </div>
                 )}
+                <div ref={chatEndRef} />
             </div>
             {error && <p className="error">{error}</p>}
             <div className="input-container">
@@ -116,12 +149,12 @@ const App = () => {
                     onKeyPress={handleKeyPress}
                     disabled={isLoading}
                 />
-                <button onClick={getResponse} disabled={isLoading}>Ask me</button>
+                <button onClick={() => getResponse()} disabled={isLoading}>Ask me</button>
                 <button className="surprise" onClick={surprise} disabled={isLoading}>Surprise me!</button>
                 <button onClick={clear} disabled={isLoading}>Clear</button>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default App
+export default App;

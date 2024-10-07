@@ -47,6 +47,10 @@ body {
     word-wrap: break-word;
 }
 
+.chat-item:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Hover effect */
+}
+
 .answer {
     margin: 0;
     line-height: 1.5;
@@ -91,7 +95,12 @@ body {
 }
 
 .input-container input::placeholder {
-    color: #8e8ea0;
+    color: #b0b0b0; /* Improved contrast for visibility */
+}
+
+.input-container input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--button-color); /* Focus style */
 }
 
 .input-container button {
@@ -112,6 +121,10 @@ body {
 .input-container button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.input-container button:disabled:hover {
+    background-color: var(--button-color); /* Hover state for disabled */
 }
 
 .error {
