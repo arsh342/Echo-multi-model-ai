@@ -40,31 +40,11 @@ const App = () => {
     const surprise = () => {
         const randomValue = surpriseOptions[Math.floor(Math.random() * surpriseOptions.length)];
         setValue(randomValue);
-        getResponse(randomValue); // Send the surprise question to the API directly
+        getResponse(randomValue);
     };
 
-    const formatResponse = (data) => {
-        let formattedData = data.trim();
-        if (!formattedData.endsWith(".")) {
-            formattedData += ".";
-        }
-        formattedData = formattedData.charAt(0).toUpperCase() + formattedData.slice(1);
-
-        // Shortening if too long
-        if (formattedData.length > 200) {
-            formattedData = formattedData.slice(0, 200) + "...";
-        }
-
-        // Adding a prefix
-        formattedData = "Here’s what I found: " + formattedData;
-
-        return formattedData;
-    };
-
-    const getResponse = async (inputValue) => {
-        const currentValue = inputValue !== undefined ? String(inputValue) : value; // Ensure it's a string
-
-        if (!currentValue.trim()) {
+    const getResponse = async (inputValue = value) => {
+        if (!inputValue.trim()) {
             setError("Please enter a question.");
             return;
         }
@@ -75,7 +55,7 @@ const App = () => {
                 method: "POST",
                 body: JSON.stringify({
                     history: chatHistory,
-                    message: currentValue,
+                    message: inputValue,
                 }),
                 headers: {
                     "Content-Type": "application/json",
@@ -84,20 +64,16 @@ const App = () => {
             const response = await fetch("https://mira-api-ai.vercel.app/gemini", options);
             const data = await response.text();
 
-            // Format the API response
-            const formattedData = formatResponse(data);
-
-            // Update chat history with the formatted response
             setChatHistory((oldChatHistory) => [
                 ...oldChatHistory,
                 {
                     role: "user",
-                    parts: [currentValue],
+                    parts: inputValue
                 },
                 {
                     role: "Mira",
-                    parts: [formattedData],
-                },
+                    parts: data
+                }
             ]);
             setValue("");
         } catch (error) {
@@ -154,7 +130,7 @@ const App = () => {
                 <button onClick={clear} disabled={isLoading}>Clear</button>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default App
+export default App;
