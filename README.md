@@ -17,16 +17,16 @@ To get the project running locally, follow these steps:
 
 ### 1. Clone the repository:
 
-\`\`\`bash
+```bash
 git clone https://github.com/yourusername/mira-ai-chatbot.git
 cd mira-ai-chatbot
-\`\`\`
+```
 
 ### 2. Install dependencies for both frontend and backend:
 
 Navigate to the `client` and `server` directories and install the necessary dependencies:
 
-\`\`\`bash
+```bash
 # Install frontend dependencies
 cd client
 npm install
@@ -34,21 +34,21 @@ npm install
 # Install backend dependencies
 cd ../server
 npm install
-\`\`\`
+```
 
 ### 3. Set up environment variables:
 
 Create a `.env` file in the `server` directory and add the necessary environment variables for the Google Gemini API key and other configurations:
 
-\`\`\`
+```
 GOOGLE_GEMINI_API_KEY=your-api-key
-\`\`\`
+```
 
 ### 4. Run the development servers:
 
 To start both the React frontend and Node.js backend, you can use the following commands:
 
-\`\`\`bash
+```bash
 # Start the backend server
 cd server
 npm start
@@ -56,7 +56,7 @@ npm start
 # Start the frontend React app
 cd ../client
 npm start
-\`\`\`
+```
 
 The backend will run on [http://localhost:5000](http://localhost:5000) and the frontend on [http://localhost:3000](http://localhost:3000).
 
@@ -66,10 +66,10 @@ Follow these steps to deploy your chatbot:
 
 1. Build the frontend for production:
 
-\`\`\`bash
+```bash
 cd client
 npm run build
-\`\`\`
+```
 
 2. Deploy both the frontend and backend on your preferred platform (e.g., Heroku, Vercel, AWS).
 
