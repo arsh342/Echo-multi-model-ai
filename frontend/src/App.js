@@ -8,6 +8,13 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
+// Add debug logging
+console.log('Environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    REACT_APP_API_URL: process.env.REACT_APP_API_URL,
+    API_URL: API_URL
+});
+
 const App = () => {
     const [value, setValue] = useState("");
     const [error, setError] = useState("");
