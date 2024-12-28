@@ -37,7 +37,6 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const App = () => {
     const [inputValue, setInputValue] = useState("");
-    const [error, setError] = useState("");
     const [chatHistory, setChatHistory] = useState(() => {
         try {
             const saved = localStorage.getItem('chatHistory');
@@ -48,26 +47,19 @@ const App = () => {
         }
     });
     const [isLoading, setIsLoading] = useState(false);
-    const [isRateLimited, setIsRateLimited] = useState(false);
-    const [currentLoadingMessage, setCurrentLoadingMessage] = useState(loadingMessages[0]);
+    const [error, setError] = useState("");
     const chatEndRef = useRef(null);
-    const inputRef = useRef(null);
 
-    // Rotate loading messages
+    const scrollToBottom = () => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    // Auto-scroll when chat history changes or loading state changes
     useEffect(() => {
-        if (isLoading) {
-            const interval = setInterval(() => {
-                setCurrentLoadingMessage(prev => {
-                    const currentIndex = loadingMessages.findIndex(msg => msg.text === prev.text);
-                    const nextIndex = (currentIndex + 1) % loadingMessages.length;
-                    return loadingMessages[nextIndex];
-                });
-            }, 3000);
-            return () => clearInterval(interval);
-        }
-    }, [isLoading]);
+        scrollToBottom();
+    }, [chatHistory, isLoading]);
 
-    // Save chat history with error handling
+    // Save chat history to localStorage
     useEffect(() => {
         try {
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
@@ -77,205 +69,163 @@ const App = () => {
         }
     }, [chatHistory]);
 
-    // Enhanced scroll behavior
-    useEffect(() => {
-        if (chatEndRef.current) {
-            const smoothScroll = () => {
-                chatEndRef.current.scrollIntoView({ 
-                    behavior: "smooth", 
-                    block: "end" 
-                });
-            };
-            smoothScroll();
-            // Ensure scroll happens after content render
-            setTimeout(smoothScroll, 100);
-        }
-    }, [chatHistory, isLoading]);
-
-    const cleanResponse = (text) => {
-        return text.replace(/\*/g, '');
-    };
-
-    const getResponse = useCallback(async (retryCount = 0, messageOverride = null) => {
-        const messageToSend = messageOverride || inputValue;
-        
-        if (!messageToSend.trim()) {
-            setError("Please enter a question.");
+    const getResponse = async () => {
+        if (!inputValue.trim()) {
+            setError("Please enter a message.");
             return;
         }
 
-        if (isRateLimited) {
-            setError("Please wait a moment before trying again.");
-            return;
-        }
+        // Immediately show the user's message
+        setChatHistory(prev => [
+            ...prev,
+            { role: "user", parts: inputValue }
+        ]);
 
-        if (retryCount === 0) {
-            setIsLoading(true);
-            setError("");
-        }
-        
+        setIsLoading(true);
+        setError("");
+
         try {
-            const newUserMessage = { role: "user", parts: messageToSend };
-            if (retryCount === 0) {
-                setChatHistory(prev => [...prev, newUserMessage]);
-            }
-
             const response = await fetch(`${API_URL}/gemini`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Accept": "application/json"
                 },
-                mode: 'cors',
                 body: JSON.stringify({
                     history: chatHistory.slice(-MAX_HISTORY_LENGTH),
-                    message: messageToSend
+                    message: inputValue
                 })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.message || 'An error occurred');
+                throw new Error(data.message || 'Failed to get response');
             }
 
+            // Add only the AI response since user message is already added
             setChatHistory(prev => [
                 ...prev,
-                { role: "Mira", parts: cleanResponse(data.message) }
+                { role: "mira", parts: data.message.replace(/\*/g, '') }
             ]);
             
             setInputValue("");
-            inputRef.current?.focus();
         } catch (error) {
-            handleError(error, retryCount);
-        } finally {
-            if (retryCount === 0 || retryCount === MAX_RETRIES) {
-                setIsLoading(false);
-            }
-        }
-    }, [inputValue, isRateLimited, chatHistory]);
-
-    const handleError = (error, retryCount) => {
-        console.error("Error:", error);
-        if (error.message === 'Failed to fetch') {
-            setError('Connection error. Please check your internet connection.');
-        } else if (error.message.includes('API key')) {
-            setError('Authentication error. Please check the configuration.');
-        } else if (error.message.includes('Too many requests')) {
-            setIsRateLimited(true);
-            setTimeout(() => setIsRateLimited(false), 60000);
-            setError('Rate limit reached. Please wait a moment.');
-        } else if (error.message.includes('Service is temporarily unavailable') && retryCount < MAX_RETRIES) {
-            setTimeout(() => getResponse(retryCount + 1), RETRY_DELAY * (retryCount + 1));
-        } else {
-            setChatHistory(prev => prev.slice(0, -1));
+            console.error("Error:", error);
             setError(error.message || "Failed to get response. Please try again.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleSurprise = () => {
         const randomPrompt = surprisePrompts[Math.floor(Math.random() * surprisePrompts.length)];
-        getResponse(0, randomPrompt.text);
+        setInputValue(randomPrompt.text);
+        setError("");
+        
+        // First add the prompt to chat history
+        setChatHistory(prev => [
+            ...prev,
+            { role: "user", parts: randomPrompt.text }
+        ]);
+        
+        // Then make the API call
+        setIsLoading(true);
+        setError("");
+
+        fetch(`${API_URL}/gemini`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                history: chatHistory.slice(-MAX_HISTORY_LENGTH),
+                message: randomPrompt.text
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to get response');
+            }
+            return response.json();
+        })
+        .then(data => {
+            setChatHistory(prev => [
+                ...prev,
+                { role: "mira", parts: data.message.replace(/\*/g, '') }
+            ]);
+            setInputValue("");
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            setError(error.message || "Failed to get response. Please try again.");
+        })
+        .finally(() => {
+            setIsLoading(false);
+        });
     };
 
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            getResponse();
-        }
-    };
-
-    const clear = () => {
+    const handleClear = () => {
+        setChatHistory([]);
         setInputValue("");
         setError("");
-        setChatHistory([]);
         localStorage.removeItem('chatHistory');
-        inputRef.current?.focus();
     };
 
     return (
-        <ErrorBoundary>
-            <div className="app">
-                <div className="search-result">
-                    {chatHistory.map((chatItem, index) => (
-                        <div 
-                            key={index} 
-                            className={`chat-item ${chatItem.role.toLowerCase()}`}
-                            style={{ 
-                                animationDelay: `${index * 0.1}s`,
-                                opacity: isLoading && index === chatHistory.length - 1 ? 0.7 : 1
-                            }}
-                        >
-                            <div className="profile-circle">
-                                {chatItem.role.toLowerCase() === 'user' ? '😎' : '✨'}
+        <div className="app">
+            {/* Main Content */}
+            <div className="main-content">
+                <div className="chat-container">
+                    {chatHistory.map((item, index) => (
+                        <div key={index} className={`chat-item ${item.role}`}>
+                            <div className="profile-icon">
+                                {item.role === 'user' ? '😎' : '✨'}
                             </div>
-                            <p className="answer">
-                                {chatItem.parts.split('\n').map((line, i) => (
-                                    <span key={i} className="text-line">
-                                        {line}
-                                        {i < chatItem.parts.split('\n').length - 1 && <br />}
-                                    </span>
-                                ))}
-                            </p>
+                            <div className="message-content">{item.parts}</div>
                         </div>
                     ))}
                     {isLoading && (
-                        <div className="loading-container">
+                        <div className="chat-item mira">
+                            <div className="profile-icon">✨</div>
                             <div className="loading">
-                                <div className="loading-star">{currentLoadingMessage.emoji}</div>
+                                <span></span>
+                                <span></span>
+                                <span></span>
                             </div>
-                            <p className="loading-text">{currentLoadingMessage.text}</p>
                         </div>
                     )}
                     <div ref={chatEndRef} />
                 </div>
-                {error && (
-                    <div className="error-container">
-                        <p className="error">{error}</p>
-                    </div>
-                )}
+
                 <div className="input-container">
-                    <textarea
-                        ref={inputRef}
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Ask me anything..."
-                        rows="1"
-                        style={{ height: 'auto' }}
-                    />
-                    <div className="button-group">
-                        <button 
-                            type="button"
-                            onClick={clear}
-                            className="clear-button"
-                            disabled={isLoading || chatHistory.length === 0}
-                            title="Clear chat"
-                        >
-                            <i className="fas fa-trash-alt"></i>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleSurprise}
-                            className="surprise-button"
-                            disabled={isLoading}
-                            title="Get a random prompt"
-                        >
-                            <i className="fas fa-shuffle"></i>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => getResponse()}
-                            disabled={isLoading || !inputValue.trim()}
-                            title="Send message"
-                            className="send-button"
-                        >
-                            <i className="fas fa-paper-plane"></i>
-                        </button>
+                    <div className="input-wrapper">
+                        <textarea
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            placeholder="Send a message here"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    getResponse();
+                                }
+                            }}
+                        />
+                        <div className="button-group">
+                            <button onClick={handleClear} title="Clear chat">
+                                <i className="fas fa-trash"></i>
+                            </button>
+                            <button onClick={handleSurprise} title="Random prompt">
+                                <i className="fas fa-shuffle"></i>
+                            </button>
+                            <button onClick={getResponse} disabled={!inputValue.trim() || isLoading}>
+                                <i className="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
                     </div>
+                    {error && <div className="error">{error}</div>}
                 </div>
             </div>
-        </ErrorBoundary>
+        </div>
     );
 };
 
