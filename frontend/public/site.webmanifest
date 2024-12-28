@@ -1,0 +1,31 @@
+{
+    "name": "Mira AI Assistant",
+    "short_name": "Mira",
+    "description": "Your AI Assistant powered by Gemini",
+    "icons": [
+        {
+            "src": "/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "theme_color": "#1a1a1a",
+    "background_color": "#1a1a1a",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "categories": ["ai", "productivity", "utilities"],
+    "shortcuts": [
+        {
+            "name": "New Chat",
+            "url": "/"
+        }
+    ]
+} 

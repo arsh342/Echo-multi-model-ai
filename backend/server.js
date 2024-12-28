@@ -8,7 +8,7 @@ const path = require('path')
 
 // Add these constants at the top of your file
 const RATE_LIMIT_WINDOW = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const MAX_REQUESTS = 50; // Daily limit of 50 requests
+const MAX_REQUESTS = 1500; // Daily limit of 50 requests
 
 // Add this near the top of your server.js file
 const checkEnvironment = () => {
@@ -30,16 +30,25 @@ const checkEnvironment = () => {
 // Call it before initializing the API
 checkEnvironment();
 
-// Initialize Gemini API with error handling
-let genAI;
+// Initialize Gemini model once
+let model;
 try {
-    if (!process.env.GOOGLE_GEN_AI_KEY || process.env.GOOGLE_GEN_AI_KEY.trim() === '') {
+    if (!process.env.GOOGLE_GEN_AI_KEY?.trim()) {
         throw new Error('API key is empty or invalid');
     }
-    genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEN_AI_KEY);
     
-    // Test the API connection on startup
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEN_AI_KEY);
+    model = genAI.getGenerativeModel({ 
+        model: "gemini-pro",
+        generationConfig: {
+            temperature: 0.7,
+            topP: 0.8,
+            topK: 40,
+            maxOutputTokens: 1024,
+        },
+    });
+    
+    // Test connection
     model.generateContent("test").then(() => {
         console.log('Successfully connected to Gemini API');
     }).catch((error) => {
@@ -163,11 +172,11 @@ const rateLimiter = (req, res, next) => {
     next();
 };
 
-// Add near the top of your file
+// Optimize cache settings
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
 const responseCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-// Clean cache periodically
+// Clean cache less frequently
 setInterval(() => {
     const now = Date.now();
     for (const [key, value] of responseCache) {
@@ -175,70 +184,51 @@ setInterval(() => {
             responseCache.delete(key);
         }
     }
-}, 60000); // Clean every minute
+}, 5 * 60 * 1000); // Clean every 5 minutes
 
 // Update the Gemini endpoint
 app.post('/gemini', rateLimiter, validatePayload, async (req, res) => {
     try {
         const cacheKey = req.body.message;
-        const cached = responseCache.get(cacheKey);
         
+        // Check cache first
+        const cached = responseCache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
             return res.json({ message: cached.response });
         }
 
-        // Validate the API key before making the request
+        // Validate API key
         if (!process.env.GOOGLE_GEN_AI_KEY) {
             throw new Error('API key is not configured');
         }
 
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-pro",
-            generationConfig: {
-                temperature: 0.9,
-                topP: 1,
-                topK: 1,
-                maxOutputTokens: 2048,
-            },
-        });
-
-        console.log('Sending request to Gemini API:', {
-            messageLength: req.body.message.length,
-            timestamp: new Date().toISOString()
-        });
-
+        // Generate response
         const result = await model.generateContent([{ text: req.body.message }]);
         
-        if (!result || !result.response) {
+        if (!result?.response) {
             throw new Error('Invalid response from Gemini API');
         }
 
-        const response = await result.response;
-        const text = await response.text();
-
+        const text = await result.response.text();
         if (!text) {
             throw new Error('Empty response from Gemini API');
         }
 
-        console.log('Received response from Gemini API:', {
-            responseLength: text.length,
-            timestamp: new Date().toISOString()
-        });
+        // Clean response by removing asterisks
+        const cleanedText = text.replace(/\*/g, '');
 
-        // Cache the response
+        // Cache response
         responseCache.set(cacheKey, {
-            response: text,
+            response: cleanedText,
             timestamp: Date.now()
         });
 
-        res.json({ message: text });
+        return res.json({ message: cleanedText });
 
     } catch (error) {
         console.error('Gemini API Error:', {
             message: error.message,
-            name: error.name,
-            stack: error.stack,
-            timestamp: new Date().toISOString()
+            name: error.name
         });
 
         if (error.message?.includes('quota') || error.message?.includes('Rate limit')) {
@@ -246,15 +236,8 @@ app.post('/gemini', rateLimiter, validatePayload, async (req, res) => {
                 error: 'Rate Limit',
                 message: 'Please wait a moment before trying again.'
             });
-        } 
-        
-        if (error.message?.includes('model not found')) {
-            return res.status(400).json({
-                error: 'Model Error',
-                message: 'The specified model is not available.'
-            });
-        } 
-        
+        }
+
         if (error.message?.includes('API key')) {
             return res.status(401).json({
                 error: 'Authentication Error',
@@ -262,11 +245,9 @@ app.post('/gemini', rateLimiter, validatePayload, async (req, res) => {
             });
         }
 
-        // Generic error response
         res.status(500).json({
             error: 'Server Error',
-            message: 'An unexpected error occurred. Please try again.',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'An unexpected error occurred. Please try again.'
         });
     }
 });
