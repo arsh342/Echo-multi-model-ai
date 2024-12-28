@@ -87,10 +87,26 @@ const validatePayload = (req, res, next) => {
 };
 
 // CORS configuration
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:8000',
+    'http://localhost:8002',
+    'https://mira-4pfq.vercel.app',
+    'https://mira-two.vercel.app'
+];
+
 const corsOptions = {
-    origin: process.env.NODE_ENV === 'production'
-        ? ['https://mira-4pfq.vercel.app', 'https://mira-two.vercel.app']
-        : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8000', 'http://localhost:8002'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Accept'],
     credentials: false,
@@ -257,9 +273,12 @@ app.post('/gemini', rateLimiter, validatePayload, async (req, res) => {
 
 // Update the static file and route handling
 if (process.env.NODE_ENV === 'production') {
+    // Serve static files from the React build directory
     app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+    // Handle all other routes by serving the React app
     app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+        res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
     });
 } else {
     // In development, redirect to React dev server

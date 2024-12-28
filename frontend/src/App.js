@@ -109,7 +109,7 @@ const App = () => {
                 setChatHistory(prev => [...prev, newUserMessage]);
             }
             
-            console.log('Sending request:', {
+            console.log('Sending request to:', API_URL, {
                 messageLength: inputValue.length,
                 retryCount,
                 timestamp: new Date().toISOString()
@@ -169,7 +169,9 @@ const App = () => {
             setValue("");
         } catch (error) {
             console.error("Fetch error:", error);
-            if (retryCount === MAX_RETRIES || !error.message.includes('Service is temporarily unavailable')) {
+            if (error.message === 'Failed to fetch') {
+                setError('Unable to connect to the server. Please check your internet connection and try again.');
+            } else if (retryCount === MAX_RETRIES || !error.message.includes('Service is temporarily unavailable')) {
                 setChatHistory(prev => prev.slice(0, -1));
                 setError(error.message || "Failed to get response. Please try again.");
             }
