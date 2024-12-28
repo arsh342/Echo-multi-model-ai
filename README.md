@@ -1,82 +1,115 @@
+# Mira - AI Assistant
 
-# Mira - AI Chatbot
+A modern AI chat interface powered by Google's Gemini API. Mira provides an elegant, responsive chat experience with a beautiful dark theme and glassmorphism UI effects.
 
-**Mira** is a conversational AI chatbot built using **React** for the frontend, **Node.js** for the backend, and the **Google Gemini API** for AI-powered interactions. This project provides a simple yet powerful chatbot interface for users to engage with.
+## ✨ Features
 
-## Features
+- **Modern UI/UX**
+  - Dark theme with purple accents
+  - Glassmorphism effects
+  - Responsive design
+  - Smooth animations
+  - Custom scrollbar
 
-- **Real-time Chat**: Users can interact with the AI in real time.
-- **Google Gemini API Integration**: Uses advanced natural language processing capabilities from Google's Gemini API.
-- **Customizable UI**: The front end is built with React, allowing for easy customization and styling.
-- **Modular Backend**: Node.js backend that handles API requests and responses.
-- **Responsive Design**: Works on both desktop and mobile.
+- **Chat Functionality**
+  - Real-time chat interface
+  - Message history persistence
+  - Surprise prompts feature
+  - Smart context handling
+  - Markdown support
 
-## Installation
+- **Technical Features**
+  - Google Gemini API integration
+  - Rate limiting & caching
+  - Error handling
+  - Loading states
+  - Environment configuration
 
-To get the project running locally, follow these steps:
+## 🚀 Getting Started
 
-### 1. Clone the repository:
+### Prerequisites
 
+- Node.js (v14 or higher)
+- Google Gemini API key
+
+### Installation
+
+1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/mira-ai-chatbot.git
-cd mira-ai-chatbot
+git clone https://github.com/yourusername/mira.git
+cd mira
 ```
 
-### 2. Install dependencies for both frontend and backend:
-
-Navigate to the `client` and `server` directories and install the necessary dependencies:
-
+2. Install dependencies:
 ```bash
-# Install frontend dependencies
-cd client
-npm install
-
-# Install backend dependencies
-cd ../server
-npm install
+npm run install:all
 ```
 
-### 3. Set up environment variables:
+3. Set up environment variables:
 
-Create a `.env` file in the `server` directory and add the necessary environment variables for the Google Gemini API key and other configurations:
+Create `.env` files in both frontend and backend directories:
 
+Frontend `.env`:
 ```
-GOOGLE_GEMINI_API_KEY=your-api-key
+REACT_APP_API_URL=http://localhost:8000
 ```
 
-### 4. Run the development servers:
+Backend `.env`:
+```
+GOOGLE_GEN_AI_KEY=your_gemini_api_key
+NODE_ENV=development
+```
 
-To start both the React frontend and Node.js backend, you can use the following commands:
-
+4. Start the development servers:
 ```bash
-# Start the backend server
-cd server
-npm start
-
-# Start the frontend React app
-cd ../client
-npm start
+npm run dev
 ```
 
-The backend will run on [http://localhost:5000](http://localhost:5000) and the frontend on [http://localhost:3000](http://localhost:3000).
+The frontend will run on http://localhost:3001 and the backend on http://localhost:8000.
 
-## Deployment
+## 🛠️ Development
 
-Follow these steps to deploy your chatbot:
+### Project Structure
 
-1. Build the frontend for production:
-
-```bash
-cd client
-npm run build
+```
+mira/
+├── frontend/          # React frontend
+│   ├── public/        # Static files
+│   └── src/          # Source files
+├── backend/          # Node.js backend
+│   └── server.js     # Express server
+└── package.json      # Root package.json
 ```
 
-2. Deploy both the frontend and backend on your preferred platform (e.g., Heroku, Vercel, AWS).
+### Available Scripts
 
-## Usage
+- `npm run install:all` - Install all dependencies
+- `npm run dev` - Start both frontend and backend in development mode
+- `npm run start:frontend` - Start only the frontend
+- `npm run start:backend` - Start only the backend
+- `npm run build` - Build the frontend for production
+- `npm run deploy` - Build and start in production mode
 
-Once the app is running, users can interact with **Mira** via a simple and intuitive chat interface. The backend communicates with Google's Gemini API to process user inputs and generate AI-driven responses.
+## 🎨 UI Features
 
-## License
+- Glassmorphism effects on chat bubbles and input
+- Dynamic purple gradient background
+- Custom profile icons for user and AI
+- Modern button designs with FontAwesome icons
+- Responsive layout for all screen sizes
+
+## 🔒 Security
+
+- Rate limiting implemented
+- API key validation
+- CORS protection
+- Error handling
+- Input validation
+
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
