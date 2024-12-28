@@ -86,13 +86,21 @@ const validatePayload = (req, res, next) => {
     next();
 };
 
-app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8000', 'http://localhost:8002', 'https://mira-4pfq.vercel.app/'],
-    methods: ['POST'],
-    allowedHeaders: ['Content-Type'],
+// CORS configuration
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? ['https://mira-4pfq.vercel.app', 'https://mira-two.vercel.app']
+        : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8000', 'http://localhost:8002'],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept'],
     credentials: false,
     maxAge: 86400
-}));
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 

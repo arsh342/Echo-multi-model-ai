@@ -119,7 +119,9 @@ const App = () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "Accept": "application/json"
                 },
+                mode: 'cors',
                 body: JSON.stringify({
                     history: [],
                     message: inputValue
