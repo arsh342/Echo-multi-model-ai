@@ -1,6 +1,14 @@
-# Mira - AI Assistant
+# Mira 🌟
 
-A modern AI chat interface powered by Google's Gemini API. Mira provides an elegant, responsive chat experience with a beautiful dark theme and glassmorphism UI effects.
+A sleek AI chat interface powered by Google's Gemini API, featuring a modern dark theme with glassmorphism effects. Built with React and Node.js, Mira offers an elegant chat experience with smart context handling and real-time responses.
+
+## ✨ Key Features
+
+- Modern dark UI with purple accents and glass effects
+- Smart context handling with chat history persistence
+- Real-time responses with loading states
+- Surprise prompts for inspiration
+- Responsive design for all devices
 
 ## ✨ Features
 
