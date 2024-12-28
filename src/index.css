@@ -1,146 +1,284 @@
 :root {
-    --primary-color: #343541;
-    --secondary-color: #444654;
-    --text-color: #ececf1;
-    --input-bg: #40414f;
-    --border-color: #565869;
-    --button-color: #19c37d;
-    --button-hover: #1a7f5a;
-    --error-color: #ef4146;
+    /* Modern Gray Theme */
+    --primary-color: #1c1c1c;           /* Dark gray background */
+    --secondary-color: #2d2d2d;         /* Lighter gray background */
+    --text-color: #e0e0e0;             /* Light gray text */
+    --input-bg: #363636;               /* Input background */
+    --border-color: #4a4a4a;           /* Border color */
+    --button-color: #ffffff;           /* White buttons */
+    --button-hover: #e6e6e6;           /* Slightly darker white for hover */
+    --error-color: #ff6b6b;            /* Soft red for errors */
+    --shadow-color: rgba(0, 0, 0, 0.4);
+    --highlight-color: rgba(255, 255, 255, 0.05);
+    --user-message-bg: #363636;        /* User message background */
+    --ai-message-bg: #1c1c1c;          /* AI message background */
+    --loading-text: #808080;           /* Loading text color */
 }
 
-body {
-    font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+* {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+body, html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     background-color: var(--primary-color);
     color: var(--text-color);
     font-size: 16px;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    line-height: 1.6;
 }
 
 .app {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
+    width: 100%;
+    max-width: 100%;
+    padding: 1.5rem;
     box-sizing: border-box;
 }
 
 .search-result {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    background-color: var(--secondary-color);
+    gap: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0;
+    background-color: var(--primary-color);
+    box-shadow: none;
 }
 
 .chat-item {
-    background-color: var(--primary-color);
-    padding: 15px;
-    border-radius: 8px;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 1rem;
+    border-radius: 0.75rem;
     word-wrap: break-word;
+    max-width: 75%;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    transition: all 0.3s ease;
 }
 
-.chat-item:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Hover effect */
+.profile-circle {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    background-color: var(--input-bg);
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.chat-item.user {
+    background-color: var(--user-message-bg);
+    align-self: flex-end;
+    border-bottom-right-radius: 0.25rem;
+    margin-right: 48px;
+    padding-right: 1.5rem;
+}
+
+.chat-item.mira {
+    background-color: var(--ai-message-bg);
+    align-self: flex-start;
+    border-bottom-left-radius: 0.25rem;
+    margin-left: 48px;
+    padding-left: 1.5rem;
+}
+
+.chat-item.user .profile-circle {
+    right: -48px;
+    top: 0;
+}
+
+.chat-item.mira .profile-circle {
+    left: -48px;
+    top: 0;
 }
 
 .answer {
-    margin: 0;
-    line-height: 1.5;
+    width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-weight: normal;
+    line-height: 1.6;
+}
+
+.text-line {
+    display: inline;
+    font-weight: normal;
+}
+
+.chat-item strong {
+    color: var(--button-color);
+    font-weight: 600;
 }
 
 .loading {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 20px;
+    gap: 12px;
+    padding: 0.75rem;
+    color: var(--text-color);
+    opacity: 0.8;
 }
 
 .loading-spinner {
-    border: 4px solid var(--border-color);
-    border-top: 4px solid var(--button-color);
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: var(--text-color);
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
+    animation: typing 1s infinite;
+    margin-left: 4px;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.loading-spinner::before,
+.loading-spinner::after {
+    content: '';
+    display: inline-block;
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: var(--text-color);
+    border-radius: 50%;
+    animation: typing 1s infinite;
+}
+
+.loading-spinner::before {
+    left: -12px;
+    animation-delay: 0.2s;
+}
+
+.loading-spinner::after {
+    left: 12px;
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Update the loading text style */
+.loading p {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.7;
 }
 
 .input-container {
     display: flex;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
 }
 
 .input-container input {
     flex-grow: 1;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
+    padding: 0.875rem 1.25rem;
+    border: none;
+    border-radius: 0.75rem;
     background-color: var(--input-bg);
     color: var(--text-color);
     font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px var(--shadow-color);
 }
 
 .input-container input::placeholder {
-    color: #b0b0b0; /* Improved contrast for visibility */
+    color: var(--text-color);
+    opacity: 0.5;
 }
 
 .input-container input:focus {
     outline: none;
-    box-shadow: 0 0 0 2px var(--button-color); /* Focus style */
+    box-shadow: 0 0 0 2px var(--button-color);
 }
 
 .input-container button {
     background-color: var(--button-color);
-    color: var(--text-color);
+    color: #000000;
     border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
+    padding: 0.875rem 1.5rem;
+    border-radius: 0.75rem;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    font-size: 1rem;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .input-container button:hover:not(:disabled) {
     background-color: var(--button-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px var(--shadow-color);
 }
 
 .input-container button:disabled {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
-}
-
-.input-container button:disabled:hover {
-    background-color: var(--button-color); /* Hover state for disabled */
 }
 
 .error {
     color: var(--error-color);
     text-align: center;
-    margin-top: 10px;
+    margin-top: 0.75rem;
     font-size: 0.9rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background-color: var(--secondary-color);
 }
 
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--secondary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--button-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--button-hover);
+}
+
+/* Responsive design */
 @media (max-width: 768px) {
-    body {
-        font-size: 14px;
+    .app {
+        padding: 1rem;
     }
 
-    .app {
-        padding: 15px;
+    .search-result {
+        padding: 1rem;
+    }
+
+    .chat-item {
+        max-width: 90%;
     }
 
     .input-container {
@@ -150,19 +288,26 @@ body {
     .input-container input,
     .input-container button {
         width: 100%;
+        padding: 0.75rem 1rem;
     }
 }
 
 @media (max-width: 480px) {
     body {
-        font-size: 12px;
+        font-size: 14px;
     }
 
     .app {
-        padding: 10px;
+        padding: 0.75rem;
     }
 
     .search-result {
-        padding: 10px;
+        padding: 0.75rem;
+    }
+
+    .chat-item {
+        padding: 0.75rem;
+        max-width: 95%;
     }
 }
+
