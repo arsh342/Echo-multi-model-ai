@@ -87,7 +87,7 @@ const validatePayload = (req, res, next) => {
 };
 
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8000', 'http://localhost:8002', 'https://your-vercel-domain.vercel.app'],
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8000', 'http://localhost:8002', 'https://mira-4pfq.vercel.app/'],
     methods: ['POST'],
     allowedHeaders: ['Content-Type'],
     credentials: false,
