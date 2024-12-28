@@ -6,6 +6,8 @@ const RETRY_DELAY = 1000; // 1 second
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const App = () => {
     const [value, setValue] = useState("");
     const [error, setError] = useState("");
@@ -113,7 +115,7 @@ const App = () => {
                 timestamp: new Date().toISOString()
             });
 
-            const response = await fetch("http://localhost:8000/gemini", {
+            const response = await fetch(`${API_URL}/gemini`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -87,7 +87,7 @@ const validatePayload = (req, res, next) => {
 };
 
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:8000'],
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8000', 'http://localhost:8002', 'https://your-vercel-domain.vercel.app'],
     methods: ['POST'],
     allowedHeaders: ['Content-Type'],
     credentials: false,
@@ -249,17 +249,14 @@ app.post('/gemini', rateLimiter, validatePayload, async (req, res) => {
 
 // Update the static file and route handling
 if (process.env.NODE_ENV === 'production') {
-    // Serve static files from build folder in production
-    app.use(express.static(path.join(__dirname, 'build')));
-
-    // Handle React routing in production
+    app.use(express.static(path.join(__dirname, '../frontend/build')));
     app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, 'build', 'index.html'));
+        res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
     });
 } else {
     // In development, redirect to React dev server
     app.get('/', (req, res) => {
-        res.redirect('http://localhost:3000');
+        res.redirect('http://localhost:3001');
     });
 }
 
