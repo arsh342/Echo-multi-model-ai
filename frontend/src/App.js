@@ -7,14 +7,12 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const MAX_HISTORY_LENGTH = 6;
 
 const loadingMessages = [
-    { text: "Analyzing your request with quantum precision...", emoji: "🔮" },
-    { text: "Consulting the digital cosmos...", emoji: "✨" },
-    { text: "Processing at lightspeed...", emoji: "⚡" },
-    { text: "Connecting neural pathways...", emoji: "🧠" },
-    { text: "Gathering wisdom from the cloud...", emoji: "☁️" },
-    { text: "Computing the perfect response...", emoji: "💫" },
-    { text: "Synthesizing knowledge...", emoji: "🌟" },
-    { text: "Decoding possibilities...", emoji: "🔍" }
+    { text: "Analyzing" },
+    { text: "Processing"},
+    { text: "Connecting"},
+    { text: "Computing"},
+    { text: "Synthesizin"},
+    { text: "Decoding"}
 ];
 
 const surprisePrompts = [
@@ -164,7 +162,7 @@ const App = () => {
                                 <div className="profile-icon">✨</div>
                                 <div className="loading-message">
                                     <div className="loading-text">
-                                        {loadingMessage.emoji} {loadingMessage.text}
+                                         {loadingMessage.text}
                                     </div>
                                     <div className="loading">
                                         <span></span>
