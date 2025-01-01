@@ -8,9 +8,45 @@ const path = require('path')
 
 // Add these constants at the top of your file
 const RATE_LIMIT_WINDOW = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const MAX_REQUESTS = 1500; // Daily limit of 50 requests
+const MAX_REQUESTS = 1500; // Daily limit
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
 
-// Add this near the top of your server.js file
+// Allowed origins configuration
+const allowedOrigins = [
+    // Development origins
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:8000',
+    'http://localhost:8002',
+    // Production origins
+    'https://mira-ai.onrender.com',
+    'https://mira-geminiapi.onrender.com'
+];
+
+// CORS configuration with dynamic origin validation
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+    credentials: true,
+    maxAge: 86400
+};
+
+// Apply CORS middleware with options
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
 const checkEnvironment = () => {
     const requiredEnvVars = ['GOOGLE_GEN_AI_KEY'];
     const missing = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -20,14 +56,12 @@ const checkEnvironment = () => {
         process.exit(1);
     }
 
-    // Validate API key format
     if (!/^[A-Za-z0-9-_]+$/.test(process.env.GOOGLE_GEN_AI_KEY)) {
         console.error('Invalid API key format');
         process.exit(1);
     }
 };
 
-// Call it before initializing the API
 checkEnvironment();
 
 // Initialize Gemini model once
@@ -48,7 +82,6 @@ try {
         },
     });
     
-    // Test connection
     model.generateContent("test").then(() => {
         console.log('Successfully connected to Gemini API');
     }).catch((error) => {
@@ -59,7 +92,6 @@ try {
     process.exit(1);
 }
 
-// Middleware to validate request payload
 const validatePayload = (req, res, next) => {
     const { history, message } = req.body;
 
@@ -77,7 +109,6 @@ const validatePayload = (req, res, next) => {
         });
     }
 
-    // Validate each history item
     const isValidHistory = history.every(item => {
         return item.role &&
             typeof item.role === 'string' &&
@@ -95,28 +126,8 @@ const validatePayload = (req, res, next) => {
     next();
 };
 
-// CORS configuration
-app.use(cors({
-    origin: [
-        'https://mira-ai.onrender.com/',
-        'https://mira-geminiapi.onrender.com',
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:8000',
-        'http://localhost:8002'
-    ],
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Accept'],
-    credentials: false,
-    maxAge: 86400
-}));
-
-// Handle preflight requests
-app.options('*', cors());
-
 app.use(express.json());
 
-// Update the rate limiter
 const rateLimit = {
     hits: new Map(),
     clean: function() {
@@ -142,7 +153,6 @@ const rateLimiter = (req, res, next) => {
     }
 
     if (now - userHits.timestamp > RATE_LIMIT_WINDOW) {
-        // Reset counter if 24 hours have passed
         rateLimit.hits.set(ip, { count: 1, timestamp: now });
         return next();
     }
@@ -150,7 +160,7 @@ const rateLimiter = (req, res, next) => {
     if (userHits.count >= MAX_REQUESTS) {
         return res.status(429).json({
             error: 'Too Many Requests',
-            message: 'Daily limit of 50 requests exceeded. Please try again tomorrow.',
+            message: 'Daily request limit exceeded. Please try again tomorrow.',
             remainingTime: RATE_LIMIT_WINDOW - (now - userHits.timestamp)
         });
     }
@@ -159,11 +169,8 @@ const rateLimiter = (req, res, next) => {
     next();
 };
 
-// Optimize cache settings
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
 const responseCache = new Map();
 
-// Clean cache less frequently
 setInterval(() => {
     const now = Date.now();
     for (const [key, value] of responseCache) {
@@ -171,25 +178,21 @@ setInterval(() => {
             responseCache.delete(key);
         }
     }
-}, 5 * 60 * 1000); // Clean every 5 minutes
+}, 5 * 60 * 1000);
 
-// Update the Gemini endpoint
 app.post('/gemini', rateLimiter, validatePayload, async (req, res) => {
     try {
         const cacheKey = req.body.message;
         
-        // Check cache first
         const cached = responseCache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
             return res.json({ message: cached.response });
         }
 
-        // Validate API key
         if (!process.env.GOOGLE_GEN_AI_KEY) {
             throw new Error('API key is not configured');
         }
 
-        // Generate response
         const result = await model.generateContent([{ text: req.body.message }]);
         
         if (!result?.response) {
@@ -201,10 +204,8 @@ app.post('/gemini', rateLimiter, validatePayload, async (req, res) => {
             throw new Error('Empty response from Gemini API');
         }
 
-        // Clean response by removing asterisks
         const cleanedText = text.replace(/\*/g, '');
 
-        // Cache response
         responseCache.set(cacheKey, {
             response: cleanedText,
             timestamp: Date.now()
@@ -239,23 +240,30 @@ app.post('/gemini', rateLimiter, validatePayload, async (req, res) => {
     }
 });
 
-// Update the static file and route handling
 if (process.env.NODE_ENV === 'production') {
-    // Serve static files from the React build directory
     app.use(express.static(path.join(__dirname, '../frontend/build')));
-
-    // Handle all other routes by serving the React app
     app.get('*', (req, res) => {
         res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
     });
 } else {
-    // In development, redirect to React dev server
     app.get('/', (req, res) => {
         res.redirect('http://localhost:3001');
     });
 }
 
-// Global error handler - move this AFTER routes but BEFORE app.listen
+// Error handlers
+app.use((err, req, res, next) => {
+    if (err.message === 'Not allowed by CORS') {
+        res.status(403).json({
+            error: 'CORS Error',
+            message: 'Origin not allowed',
+            allowedOrigins
+        });
+    } else {
+        next(err);
+    }
+});
+
 app.use((err, req, res, next) => {
     console.error('Global error handler:', {
         message: err.message,
@@ -270,7 +278,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Add this function at the top of your file
 const findAvailablePort = async (startPort) => {
     const net = require('net');
     
@@ -293,7 +300,6 @@ const findAvailablePort = async (startPort) => {
     return port;
 };
 
-// Update the app.listen section
 const startServer = async () => {
     try {
         const availablePort = await findAvailablePort(PORT);
@@ -311,10 +317,8 @@ const startServer = async () => {
     }
 };
 
-// Call the start function
 startServer();
 
-// Update the cleanup interval to match the daily window
 setInterval(() => {
     const now = Date.now();
     rateLimit.clean();
