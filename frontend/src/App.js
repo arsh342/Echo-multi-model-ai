@@ -6,15 +6,6 @@ const RETRY_DELAY = 500;
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 const MAX_HISTORY_LENGTH = 6;
 
-const loadingMessages = [
-    { text: "Analyzing" },
-    { text: "Processing"},
-    { text: "Connecting"},
-    { text: "Computing"},
-    { text: "Synthesizin"},
-    { text: "Decoding"}
-];
-
 const surprisePrompts = [
     { text: "Tell me a fascinating fact about space exploration 🚀", category: "Science" },
     { text: "What is the most interesting psychological phenomenon? 🧠", category: "Psychology" },
@@ -162,7 +153,6 @@ const App = () => {
                                 <div className="profile-icon">✨</div>
                                 <div className="loading-message">
                                     <div className="loading-text">
-                                         // {loadingMessage.text}
                                     </div>
                                     <div className="loading">
                                         <span></span>
