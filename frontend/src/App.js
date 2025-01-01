@@ -162,7 +162,7 @@ const App = () => {
                                 <div className="profile-icon">✨</div>
                                 <div className="loading-message">
                                     <div className="loading-text">
-                                         {loadingMessage.text}
+                                         // {loadingMessage.text}
                                     </div>
                                     <div className="loading">
                                         <span></span>
