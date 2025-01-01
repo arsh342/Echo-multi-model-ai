@@ -98,6 +98,8 @@ const validatePayload = (req, res, next) => {
 // CORS configuration
 app.use(cors({
     origin: [
+        'https://mira-ai.onrender.com/',
+        'https://mira-geminiapi.onrender.com',
         'http://localhost:3000',
         'http://localhost:3001',
         'http://localhost:8000',
