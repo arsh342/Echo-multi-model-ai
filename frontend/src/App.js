@@ -38,7 +38,6 @@ const App = () => {
     const [error, setError] = useState("");
     const chatEndRef = useRef(null);
     const [retryCount, setRetryCount] = useState(0);
-    const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
 
     const scrollToBottom = () => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -56,15 +55,6 @@ const App = () => {
             setError('Failed to save chat history. Local storage might be full.');
         }
     }, [chatHistory]);
-
-    useEffect(() => {
-        if (isLoading) {
-            const interval = setInterval(() => {
-                setLoadingMessage(loadingMessages[Math.floor(Math.random() * loadingMessages.length)]);
-            }, 3000);
-            return () => clearInterval(interval);
-        }
-    }, [isLoading]);
 
     const getResponse = async (retryAttempt = 0) => {
         if (!inputValue.trim()) {
@@ -151,14 +141,10 @@ const App = () => {
                         {isLoading && (
                             <div className="chat-item mira">
                                 <div className="profile-icon">✨</div>
-                                <div className="loading-message">
-                                    <div className="loading-text">
-                                    </div>
-                                    <div className="loading">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
-                                    </div>
+                                <div className="loading">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
                                 </div>
                             </div>
                         )}
