@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ErrorBoundary from './components/ErrorBoundary';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 500;
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const MAX_HISTORY_LENGTH = 6; // Maximum number of messages to keep in context
+const MAX_HISTORY_LENGTH = 6;
 
-// Enhanced loading messages with emojis
 const loadingMessages = [
     { text: "Analyzing your request with quantum precision...", emoji: "🔮" },
     { text: "Consulting the digital cosmos...", emoji: "✨" },
@@ -49,17 +48,17 @@ const App = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const chatEndRef = useRef(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
 
     const scrollToBottom = () => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // Auto-scroll when chat history changes or loading state changes
     useEffect(() => {
         scrollToBottom();
     }, [chatHistory, isLoading]);
 
-    // Save chat history to localStorage
     useEffect(() => {
         try {
             localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
@@ -69,13 +68,21 @@ const App = () => {
         }
     }, [chatHistory]);
 
-    const getResponse = async () => {
+    useEffect(() => {
+        if (isLoading) {
+            const interval = setInterval(() => {
+                setLoadingMessage(loadingMessages[Math.floor(Math.random() * loadingMessages.length)]);
+            }, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [isLoading]);
+
+    const getResponse = async (retryAttempt = 0) => {
         if (!inputValue.trim()) {
             setError("Please enter a message.");
             return;
         }
 
-        // Immediately show the user's message
         setChatHistory(prev => [
             ...prev,
             { role: "user", parts: inputValue }
@@ -90,78 +97,46 @@ const App = () => {
                 headers: {
                     "Content-Type": "application/json",
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     history: chatHistory.slice(-MAX_HISTORY_LENGTH),
                     message: inputValue
                 })
             });
 
-            const data = await response.json();
-
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to get response');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to get response');
             }
 
-            // Add only the AI response since user message is already added
+            const data = await response.json();
+            
             setChatHistory(prev => [
                 ...prev,
                 { role: "mira", parts: data.message.replace(/\*/g, '') }
             ]);
             
             setInputValue("");
+            setRetryCount(0);
         } catch (error) {
             console.error("Error:", error);
+            
+            if (retryAttempt < MAX_RETRIES) {
+                setRetryCount(retryAttempt + 1);
+                await wait(RETRY_DELAY * (retryAttempt + 1));
+                return getResponse(retryAttempt + 1);
+            }
+            
             setError(error.message || "Failed to get response. Please try again.");
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleSurprise = () => {
+    const handleSurprise = async () => {
         const randomPrompt = surprisePrompts[Math.floor(Math.random() * surprisePrompts.length)];
         setInputValue(randomPrompt.text);
-        setError("");
-        
-        // First add the prompt to chat history
-        setChatHistory(prev => [
-            ...prev,
-            { role: "user", parts: randomPrompt.text }
-        ]);
-        
-        // Then make the API call
-        setIsLoading(true);
-        setError("");
-
-        fetch(`${API_URL}/gemini`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                history: chatHistory.slice(-MAX_HISTORY_LENGTH),
-                message: randomPrompt.text
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to get response');
-            }
-            return response.json();
-        })
-        .then(data => {
-            setChatHistory(prev => [
-                ...prev,
-                { role: "mira", parts: data.message.replace(/\*/g, '') }
-            ]);
-            setInputValue("");
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            setError(error.message || "Failed to get response. Please try again.");
-        })
-        .finally(() => {
-            setIsLoading(false);
-        });
+        await getResponse();
     };
 
     const handleClear = () => {
@@ -172,62 +147,87 @@ const App = () => {
     };
 
     return (
-        <div className="app">
-            {/* Main Content */}
-            <div className="main-content">
-                <div className="chat-container">
-                    {chatHistory.map((item, index) => (
-                        <div key={index} className={`chat-item ${item.role}`}>
-                            <div className="profile-icon">
-                                {item.role === 'user' ? '😎' : '✨'}
+        <ErrorBoundary>
+            <div className="app">
+                <div className="main-content">
+                    <div className="chat-container">
+                        {chatHistory.map((item, index) => (
+                            <div key={index} className={`chat-item ${item.role}`}>
+                                <div className="profile-icon">
+                                    {item.role === 'user' ? '😎' : '✨'}
+                                </div>
+                                <div className="message-content">{item.parts}</div>
                             </div>
-                            <div className="message-content">{item.parts}</div>
-                        </div>
-                    ))}
-                    {isLoading && (
-                        <div className="chat-item mira">
-                            <div className="profile-icon">✨</div>
-                            <div className="loading">
-                                <span></span>
-                                <span></span>
-                                <span></span>
+                        ))}
+                        {isLoading && (
+                            <div className="chat-item mira">
+                                <div className="profile-icon">✨</div>
+                                <div className="loading-message">
+                                    <div className="loading-text">
+                                        {loadingMessage.emoji} {loadingMessage.text}
+                                    </div>
+                                    <div className="loading">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                    <div ref={chatEndRef} />
-                </div>
-
-                <div className="input-container">
-                    <div className="input-wrapper">
-                        <textarea
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            placeholder="Send a message here"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    getResponse();
-                                }
-                            }}
-                        />
-                        <div className="button-group">
-                            <button onClick={handleClear} title="Clear chat">
-                                <i className="fas fa-trash"></i>
-                            </button>
-                            <button onClick={handleSurprise} title="Random prompt">
-                                <i className="fas fa-shuffle"></i>
-                            </button>
-                            <button onClick={getResponse} disabled={!inputValue.trim() || isLoading}>
-                                <i className="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
+                        )}
+                        <div ref={chatEndRef} />
                     </div>
-                    {error && <div className="error">{error}</div>}
+
+                    <div className="input-container">
+                        <div className="input-wrapper">
+                            <textarea
+                                value={inputValue}
+                                onChange={(e) => {
+                                    setInputValue(e.target.value);
+                                    setError("");
+                                }}
+                                placeholder="Send a message here"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        getResponse();
+                                    }
+                                }}
+                                disabled={isLoading}
+                            />
+                            <div className="button-group">
+                                <button 
+                                    onClick={handleClear} 
+                                    title="Clear chat"
+                                    disabled={isLoading || chatHistory.length === 0}
+                                >
+                                    <i className="fas fa-trash"></i>
+                                </button>
+                                <button 
+                                    onClick={handleSurprise} 
+                                    title="Random prompt"
+                                    disabled={isLoading}
+                                >
+                                    <i className="fas fa-shuffle"></i>
+                                </button>
+                                <button 
+                                    onClick={() => getResponse()} 
+                                    disabled={!inputValue.trim() || isLoading}
+                                >
+                                    <i className="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {error && <div className="error">{error}</div>}
+                        {retryCount > 0 && (
+                            <div className="retry-message">
+                                Retry attempt {retryCount} of {MAX_RETRIES}...
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+        </ErrorBoundary>
     );
 };
 
 export default App;
-
