@@ -56,20 +56,7 @@ const App = () => {
         }
     }, [chatHistory]);
 
-    const getResponse = async (retryAttempt = 0) => {
-        if (!inputValue.trim()) {
-            setError("Please enter a message.");
-            return;
-        }
-
-        setChatHistory(prev => [
-            ...prev,
-            { role: "user", parts: inputValue }
-        ]);
-
-        setIsLoading(true);
-        setError("");
-
+    const makeRequest = async (message, retryAttempt = 0) => {
         try {
             const response = await fetch(`${API_URL}/gemini`, {
                 method: "POST",
@@ -79,7 +66,7 @@ const App = () => {
                 credentials: 'include',
                 body: JSON.stringify({
                     history: chatHistory.slice(-MAX_HISTORY_LENGTH),
-                    message: inputValue
+                    message: message
                 })
             });
 
@@ -103,7 +90,7 @@ const App = () => {
             if (retryAttempt < MAX_RETRIES) {
                 setRetryCount(retryAttempt + 1);
                 await wait(RETRY_DELAY * (retryAttempt + 1));
-                return getResponse(retryAttempt + 1);
+                return makeRequest(message, retryAttempt + 1);
             }
             
             setError(error.message || "Failed to get response. Please try again.");
@@ -112,10 +99,36 @@ const App = () => {
         }
     };
 
+    const getResponse = async () => {
+        if (!inputValue.trim()) {
+            setError("Please enter a message.");
+            return;
+        }
+
+        setChatHistory(prev => [
+            ...prev,
+            { role: "user", parts: inputValue }
+        ]);
+
+        setIsLoading(true);
+        setError("");
+
+        await makeRequest(inputValue);
+    };
+
     const handleSurprise = async () => {
         const randomPrompt = surprisePrompts[Math.floor(Math.random() * surprisePrompts.length)];
         setInputValue(randomPrompt.text);
-        await getResponse();
+        
+        setChatHistory(prev => [
+            ...prev,
+            { role: "user", parts: randomPrompt.text }
+        ]);
+
+        setIsLoading(true);
+        setError("");
+
+        await makeRequest(randomPrompt.text);
     };
 
     const handleClear = () => {
