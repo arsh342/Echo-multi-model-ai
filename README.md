@@ -1,51 +1,46 @@
-# Mira 🌟
+# Echo 🌟
 
-A sleek AI chat interface powered by Google's Gemini API, featuring a modern dark theme with glassmorphism effects. Built with React and Node.js, Mira offers an elegant chat experience with smart context handling and real-time responses.
+A modern AI chat interface powered by Google's Gemini API, featuring authentication, real-time chat, and multiple AI model support. Built with React, Node.js, and Material-UI, Echo offers a secure and elegant chat experience with smart context handling and real-time responses.
 
 ## ✨ Key Features
 
-- Modern dark UI with purple accents and glass effects
-- Smart context handling with chat history persistence
-- Real-time responses with loading states
-- Surprise prompts for inspiration
-- Responsive design for all devices
-
-## ✨ Features
-
 - **Modern UI/UX**
-  - Dark theme with purple accents
-  - Glassmorphism effects
-  - Responsive design
-  - Smooth animations
-  - Custom scrollbar
+  - Material-UI based interface with dark theme
+  - Responsive design for all devices
+  - Markdown support with syntax highlighting
+  - Real-time chat interface with loading states
 
-- **Chat Functionality**
-  - Real-time chat interface
-  - Message history persistence
-  - Surprise prompts feature
+- **Authentication & Security**
+  - Auth0 integration for secure authentication
+  - JWT-based API security
+  - Rate limiting with Redis
+  - CORS protection
+  - Input validation
+
+- **AI Integration**
+  - Google Gemini API support
+  - Multiple AI model support (OpenAI, Anthropic)
   - Smart context handling
-  - Markdown support
-
-- **Technical Features**
-  - Google Gemini API integration
-  - Rate limiting & caching
-  - Error handling
-  - Loading states
-  - Environment configuration
+  - Message history persistence with MongoDB
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js (v14 or higher)
+- MongoDB database
+- Redis server
+- Auth0 account
 - Google Gemini API key
+- (Optional) OpenAI API key
+- (Optional) Anthropic API key
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/mira.git
-cd mira
+git clone https://github.com/yourusername/echo.git
+cd echo
 ```
 
 2. Install dependencies:
@@ -55,16 +50,23 @@ npm run install:all
 
 3. Set up environment variables:
 
-Create `.env` files in both frontend and backend directories:
-
 Frontend `.env`:
 ```
 REACT_APP_API_URL=http://localhost:8000
+REACT_APP_AUTH0_DOMAIN=your_auth0_domain
+REACT_APP_AUTH0_CLIENT_ID=your_auth0_client_id
+REACT_APP_AUTH0_AUDIENCE=your_auth0_audience
 ```
 
 Backend `.env`:
 ```
 GOOGLE_GEN_AI_KEY=your_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+MONGODB_URI=your_mongodb_uri
+REDIS_URL=your_redis_url
+AUTH0_ISSUER_BASE_URL=your_auth0_domain
+AUTH0_AUDIENCE=your_auth0_audience
 NODE_ENV=development
 ```
 
@@ -80,12 +82,16 @@ The frontend will run on http://localhost:3001 and the backend on http://localho
 ### Project Structure
 
 ```
-mira/
+echo/
 ├── frontend/          # React frontend
 │   ├── public/        # Static files
 │   └── src/          # Source files
+│       ├── components/  # React components
+│       ├── contexts/    # React contexts
+│       └── services/    # API services
 ├── backend/          # Node.js backend
-│   └── server.js     # Express server
+│   ├── server.js     # Express server
+│   └── db.js         # Database configuration
 └── package.json      # Root package.json
 ```
 
@@ -97,22 +103,39 @@ mira/
 - `npm run start:backend` - Start only the backend
 - `npm run build` - Build the frontend for production
 - `npm run deploy` - Build and start in production mode
+- `npm run clean` - Remove all node_modules directories
+- `npm run vercel-build` - Build for Vercel deployment
 
-## 🎨 UI Features
+## 🔧 Dependencies
 
-- Glassmorphism effects on chat bubbles and input
-- Dynamic purple gradient background
-- Custom profile icons for user and AI
-- Modern button designs with FontAwesome icons
-- Responsive layout for all screen sizes
+### Frontend
+- React 18
+- Material-UI
+- Auth0 React SDK
+- React Markdown
+- React Syntax Highlighter
+- UUID
 
-## 🔒 Security
+### Backend
+- Express
+- Google Generative AI SDK
+- OpenAI SDK
+- Anthropic SDK
+- MongoDB with Mongoose
+- Redis
+- Auth0 JWT Bearer
+- Rate Limiter Flexible
 
-- Rate limiting implemented
-- API key validation
-- CORS protection
-- Error handling
-- Input validation
+## 🚀 Deployment
+
+The project is configured for deployment on Vercel. The `vercel-build` script handles the build process automatically. Make sure to set up the following environment variables in your Vercel project:
+
+- `GOOGLE_GEN_AI_KEY` - Your Google Gemini API key
+- `MONGODB_URI` - Your MongoDB connection string
+- `REDIS_URL` - Your Redis connection URL
+- `AUTH0_ISSUER_BASE_URL` - Your Auth0 domain
+- `AUTH0_AUDIENCE` - Your Auth0 API audience
+- `NODE_ENV` - Set to "production"
 
 ## 📝 License
 
