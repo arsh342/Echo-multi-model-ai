@@ -1,218 +1,242 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { v4 as uuidv4 } from 'uuid';
+import {
+    Box, IconButton, TextField, CircularProgress, Paper, Card, CardContent, Grid, Avatar, Typography, Button
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import SendIcon from '@mui/icons-material/Send';
 import ErrorBoundary from './components/ErrorBoundary';
+import Sidebar from './components/Sidebar';
 
-const MAX_RETRIES = 2;
-const RETRY_DELAY = 500;
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const MAX_HISTORY_LENGTH = 6;
+const DRAWER_WIDTH = 280;
 
-const surprisePrompts = [
-    { text: "Tell me a fascinating fact about space exploration 🚀", category: "Science" },
-    { text: "What is the most interesting psychological phenomenon? 🧠", category: "Psychology" },
-    { text: "Share a mind-blowing fact about quantum physics ⚛️", category: "Science" },
-    { text: "What is the most innovative technology trend right now? 💡", category: "Tech" },
-    { text: "Tell me about a mysterious historical event 🏛️", category: "History" },
-    { text: "What is the most incredible animal adaptation? 🦋", category: "Nature" },
-    { text: "Share an amazing fact about the human body 🫀", category: "Biology" },
-    { text: "What is the most surprising discovery in astronomy? 🌌", category: "Science" },
-    { text: "Tell me about an ancient civilization technology 🏺", category: "History" },
-    { text: "What is the most fascinating AI breakthrough? 🤖", category: "Tech" },
-    { text: "Share a surprising fact about ocean life 🌊", category: "Nature" },
-    { text: "What is the most interesting mathematical concept? 📐", category: "Math" }
-];
+// --- Helper Components ---
 
-const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const Loading = () => (<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: 'background.default' }}><CircularProgress /></Box>);
 
+const LoginScreen = () => {
+    const { loginWithRedirect } = useAuth0();
+    return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'center', alignItems: 'center', height: '100vh', textAlign: 'center' }}>
+            <Typography variant="h2" gutterBottom>Welcome to Mira</Typography>
+            <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>Your AI-powered chat assistant</Typography>
+            <Button variant="contained" size="large" onClick={() => loginWithRedirect()}>Log In</Button>
+        </Box>
+    );
+};
+
+const WelcomeScreen = ({ onPromptClick }) => {
+    const prompts = [
+        { title: "Explain", content: "quantum computing in simple terms" },
+        { title: "Brainstorm", content: "names for a new coffee shop" },
+        { title: "Write", content: "a short story about a robot who discovers music" },
+        { title: "Plan", content: "a healthy and delicious meal for tonight" }
+    ];
+
+    return (
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: 3 }}>
+            <Avatar sx={{ width: 56, height: 56, bgcolor: 'primary.main', mb: 2 }}>✨</Avatar>
+            <Typography variant="h4" sx={{ fontWeight: 500 }}>How can I help you today?</Typography>
+            <Grid container spacing={2} sx={{ mt: 4, maxWidth: '900px' }}>
+                {prompts.map((prompt, i) => (
+                    <Grid item xs={12} sm={6} key={i}>
+                        <Card variant="outlined" sx={{ height: '100%', cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }} onClick={() => onPromptClick(`${prompt.title} ${prompt.content}`)}>
+                            <CardContent>
+                                <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>{prompt.title}</Typography>
+                                <Typography variant="body1">{prompt.content}</Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
+        </Box>
+    );
+};
+
+// --- Main App Component ---
 const App = () => {
+    const { user, logout, isAuthenticated, isLoading: isAuthLoading, getAccessTokenSilently } = useAuth0();
+
+    // State Management
     const [inputValue, setInputValue] = useState("");
-    const [chatHistory, setChatHistory] = useState(() => {
-        try {
-            const saved = localStorage.getItem('chatHistory');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            console.error('Failed to load chat history:', e);
-            return [];
-        }
-    });
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState("");
-    const chatEndRef = useRef(null);
-    const [retryCount, setRetryCount] = useState(0);
+    const [chatHistory, setChatHistory] = useState([]);
+    const [conversations, setConversations] = useState([]);
+    const [currentConversationId, setCurrentConversationId] = useState(null);
+    const [isLoadingResponse, setIsLoadingResponse] = useState(false);
+    const [setError] = useState("");
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const chatContainerRef = useRef(null);
 
-    const scrollToBottom = () => {
-        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
+    // --- Side Effects & Logic ---
     useEffect(() => {
-        scrollToBottom();
-    }, [chatHistory, isLoading]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-        } catch (e) {
-            console.error('Failed to save chat history:', e);
-            setError('Failed to save chat history. Local storage might be full.');
+        if (chatContainerRef.current) {
+            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
-    }, [chatHistory]);
+    }, [chatHistory, isLoadingResponse]);
 
-    const makeRequest = async (message, retryAttempt = 0) => {
-        try {
-            const response = await fetch(`${API_URL}/gemini`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    history: chatHistory.slice(-MAX_HISTORY_LENGTH),
-                    message: message
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to get response');
-            }
-
-            const data = await response.json();
-            
-            setChatHistory(prev => [
-                ...prev,
-                { role: "mira", parts: data.message.replace(/\*/g, '') }
-            ]);
-            
-            setInputValue("");
-            setRetryCount(0);
-        } catch (error) {
-            console.error("Error:", error);
-            
-            if (retryAttempt < MAX_RETRIES) {
-                setRetryCount(retryAttempt + 1);
-                await wait(RETRY_DELAY * (retryAttempt + 1));
-                return makeRequest(message, retryAttempt + 1);
-            }
-            
-            setError(error.message || "Failed to get response. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const getResponse = async () => {
-        if (!inputValue.trim()) {
-            setError("Please enter a message.");
-            return;
-        }
-
-        setChatHistory(prev => [
-            ...prev,
-            { role: "user", parts: inputValue }
-        ]);
-
-        setIsLoading(true);
-        setError("");
-
-        await makeRequest(inputValue);
-    };
-
-    const handleSurprise = async () => {
-        const randomPrompt = surprisePrompts[Math.floor(Math.random() * surprisePrompts.length)];
-        setInputValue(randomPrompt.text);
-        
-        setChatHistory(prev => [
-            ...prev,
-            { role: "user", parts: randomPrompt.text }
-        ]);
-
-        setIsLoading(true);
-        setError("");
-
-        await makeRequest(randomPrompt.text);
-    };
-
-    const handleClear = () => {
+    const handleNewConversation = useCallback(() => {
         setChatHistory([]);
         setInputValue("");
+        setCurrentConversationId(`temp_${uuidv4()}`);
+    }, []);
+
+    const fetchConversations = useCallback(async () => {
+        if (isAuthenticated) {
+            try {
+                const token = await getAccessTokenSilently();
+                const response = await fetch(`${API_URL}/conversations`, { headers: { Authorization: `Bearer ${token}` } });
+                const data = await response.json();
+                setConversations(data);
+                if (!currentConversationId) {
+                    if (data.length > 0) setCurrentConversationId(data[0]._id);
+                    else handleNewConversation();
+                }
+            } catch (e) {
+                console.error("Failed to fetch conversations", e);
+                setError("Could not load conversations.");
+            }
+        }
+    }, [isAuthenticated, getAccessTokenSilently, currentConversationId, handleNewConversation]);
+
+    useEffect(() => {
+        if (isAuthenticated) fetchConversations();
+    }, [isAuthenticated, fetchConversations]);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (isAuthenticated && currentConversationId && !currentConversationId.startsWith('temp_')) {
+                const token = await getAccessTokenSilently();
+                const response = await fetch(`${API_URL}/history/${currentConversationId}`, { headers: { Authorization: `Bearer ${token}` } });
+                const data = await response.json();
+                setChatHistory(data);
+            }
+        };
+        fetchHistory();
+    }, [currentConversationId, isAuthenticated, getAccessTokenSilently]);
+
+    const sendPrompt = useCallback(async (message) => {
+        if (!currentConversationId || !message) return;
+        const conversationIdToUse = currentConversationId.startsWith('temp_') ? uuidv4() : currentConversationId;
+        if (currentConversationId.startsWith('temp_')) {
+            setCurrentConversationId(conversationIdToUse);
+        }
+        setChatHistory(prev => [...prev, { _id: `temp_msg_${Date.now()}`, role: "user", parts: message }]);
+        setIsLoadingResponse(true);
         setError("");
-        localStorage.removeItem('chatHistory');
+
+        try {
+            const token = await getAccessTokenSilently();
+            await fetch(`${API_URL}/gemini`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ message, conversationId: conversationIdToUse }),
+            });
+            await fetchConversations();
+            const histResponse = await fetch(`${API_URL}/history/${conversationIdToUse}`, { headers: { Authorization: `Bearer ${token}` } });
+            const histData = await histResponse.json();
+            setChatHistory(histData);
+        } catch (err) {
+            setError(err.message || "Failed to get response.");
+        } finally {
+            setIsLoadingResponse(false);
+        }
+    }, [currentConversationId, getAccessTokenSilently, fetchConversations]);
+
+    const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+    const handleSelectConversation = (convId) => {
+        if (convId !== currentConversationId) {
+            setChatHistory([]);
+            setCurrentConversationId(convId);
+        }
+        if (mobileOpen) setMobileOpen(false);
     };
+    const handleFormSubmit = (e) => {
+        e.preventDefault();
+        const trimmedInput = inputValue.trim();
+        if (trimmedInput) {
+            sendPrompt(trimmedInput);
+            setInputValue("");
+        }
+    };
+
+    if (isAuthLoading) return <Loading />;
+    if (!isAuthenticated) return <LoginScreen />;
 
     return (
         <ErrorBoundary>
-            <div className="app">
-                <div className="main-content">
-                    <div className="chat-container">
-                        {chatHistory.map((item, index) => (
-                            <div key={index} className={`chat-item ${item.role}`}>
-                                <div className="profile-icon">
-                                    {item.role === 'user' ? '😎' : '✨'}
-                                </div>
-                                <div className="message-content">{item.parts}</div>
-                            </div>
-                        ))}
-                        {isLoading && (
-                            <div className="chat-item mira">
-                                <div className="profile-icon">✨</div>
-                                <div className="loading">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
-                            </div>
-                        )}
-                        <div ref={chatEndRef} />
-                    </div>
+            <Box sx={{ display: 'flex', height: '100vh', p: { xs: 0, sm: 2 }, bgcolor: '#0c0b10' }}>
+                <Sidebar
+                    conversations={conversations}
+                    onNewConversation={handleNewConversation}
+                    onSelectConversation={(id) => {
+                        setCurrentConversationId(id);
+                        if (mobileOpen) setMobileOpen(false);
+                    }}
+                    currentConversationId={currentConversationId}
+                    user={user}
+                    logout={logout}
+                    drawerWidth={DRAWER_WIDTH}
+                    mobileOpen={mobileOpen}
+                    handleDrawerToggle={handleDrawerToggle}
+                />
 
-                    <div className="input-container">
-                        <div className="input-wrapper">
-                            <textarea
-                                value={inputValue}
-                                onChange={(e) => {
-                                    setInputValue(e.target.value);
-                                    setError("");
-                                }}
-                                placeholder="Send a message here"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        getResponse();
-                                    }
-                                }}
-                                disabled={isLoading}
-                            />
-                            <div className="button-group">
-                                <button 
-                                    onClick={handleClear} 
-                                    title="Clear chat"
-                                    disabled={isLoading || chatHistory.length === 0}
-                                >
-                                    <i className="fas fa-trash"></i>
-                                </button>
-                                <button 
-                                    onClick={handleSurprise} 
-                                    title="Random prompt"
-                                    disabled={isLoading}
-                                >
-                                    <i className="fas fa-shuffle"></i>
-                                </button>
-                                <button 
-                                    onClick={() => getResponse()} 
-                                    disabled={!inputValue.trim() || isLoading}
-                                >
-                                    <i className="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
-                        </div>
-                        {error && <div className="error">{error}</div>}
-                        {retryCount > 0 && (
-                            <div className="retry-message">
-                                Retry attempt {retryCount} of {MAX_RETRIES}...
-                            </div>
+                <Box component="main" sx={{
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    maxHeight: '100vh',
+                    bgcolor: 'background.default',
+                    borderRadius: { xs: 0, sm: '16px' },
+                    boxShadow: { xs: 'none', sm: 5 },
+                    position: 'relative'
+                }}>
+                    <Box sx={{ p: 1, display: { sm: 'none' } }}>
+                        <IconButton onClick={handleDrawerToggle}>
+                            <MenuIcon />
+                        </IconButton>
+                    </Box>
+                    <Box ref={chatContainerRef} className="chat-content">
+                        {chatHistory.length > 0 ? (
+                            chatHistory.map((item) => (
+                                <Box key={item._id} sx={{ display: 'flex', gap: 2, mb: 2, maxWidth: '90%', ml: item.role === 'user' ? 'auto' : 0, justifyContent: item.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                    {item.role === 'mira' && <Avatar>✨</Avatar>}
+                                    <Paper elevation={1} sx={{ p: 1.5, bgcolor: item.role === 'user' ? 'primary.main' : 'background.paper', color: item.role === 'user' ? 'primary.contrastText' : 'text.primary' }}>
+                                        <Typography sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{item.parts}</Typography>
+                                    </Paper>
+                                    {item.role === 'user' && <Avatar src={user.picture} />}
+                                </Box>
+                            ))
+                        ) : (
+                            <WelcomeScreen onPromptClick={(prompt) => sendPrompt(prompt)} />
                         )}
-                    </div>
-                </div>
-            </div>
+                        {isLoadingResponse && <CircularProgress size={24} sx={{ m: '1rem auto' }} />}
+                    </Box>
+                    <Box sx={{ p: 2 }}>
+                        <Paper component="form" sx={{ p: '2px 8px', display: 'flex', alignItems: 'center', borderRadius: '12px' }} onSubmit={handleFormSubmit}>
+                            <TextField
+                                fullWidth
+                                multiline
+                                maxRows={5}
+                                variant="standard"
+                                placeholder="Send a message..."
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleFormSubmit(e))}
+                                InputProps={{ disableUnderline: true, sx: { p: '6px' } }}
+                            />
+                            <IconButton type="submit" sx={{ p: '10px' }} aria-label="send" disabled={!inputValue.trim() || isLoadingResponse}>
+                                <SendIcon />
+                            </IconButton>
+                        </Paper>
+                        <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', color: 'text.secondary', mt: 1 }}>
+                            Mira can make mistakes. Consider checking important information.
+                        </Typography>
+                    </Box>
+                </Box>
+            </Box>
         </ErrorBoundary>
     );
 };
