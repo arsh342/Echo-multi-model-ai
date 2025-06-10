@@ -4,7 +4,7 @@ export const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#9065ff', // A nice purple accent
+      main: '#ffffff', // White accent
     },
     background: {
       default: '#131314',

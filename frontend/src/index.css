@@ -2,7 +2,7 @@
 body {
     margin: 0;
     font-family: 'Roboto', 'Inter', system-ui, sans-serif;
-    background-color: #0c0b10; /* Dark background for the page */
+    background-color: #131314; /* Matched with theme.js background.default */
 }
 
 /* --- Scrollbar Hiding --- */
