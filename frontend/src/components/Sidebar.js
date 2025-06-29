@@ -74,7 +74,7 @@ const Sidebar = ({
                 },
                 '&::-webkit-scrollbar-thumb': {
                     background: 'rgba(0,0,0,0.1)',
-                    borderRadius: '3px',
+                    borderRadius: '20px',
                 },
             }}>
                 {Array.isArray(conversations) && conversations.map(convo => {

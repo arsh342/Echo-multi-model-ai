@@ -7,7 +7,6 @@ const path = require('path');
 // --- SDK and DB Imports ---
 const OpenAI = require('openai');
 const { connectDB, Chat, Feedback } = require('./db');
-const admin = require('firebase-admin');
 
 // --- OpenRouter Configuration ---
 const openrouter = new OpenAI({
@@ -18,17 +17,6 @@ const openrouter = new OpenAI({
         "X-Title": "Echo AI Chat", // Your site name
     },
 });
-
-// --- Firebase Admin Initialization ---
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
-        })
-    });
-}
 
 // --- Constants & Initial Setup ---
 const PORT = process.env.PORT || 8000;
@@ -49,7 +37,7 @@ const corsOptions = {
         }
     },
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Accept'],
     credentials: true
 };
 app.use(cors(corsOptions));
@@ -57,7 +45,7 @@ app.options('*', cors(corsOptions));
 
 // --- Environment & Database ---
 const checkEnvironment = () => {
-    const requiredEnvVars = ['OPENROUTER_API_KEY', 'MONGODB_URI', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
+    const requiredEnvVars = ['OPENROUTER_API_KEY', 'MONGODB_URI'];
     const missing = requiredEnvVars.filter(varName => !process.env[varName]);
     if (missing.length > 0) {
         console.error('Missing required environment variables:', missing);
@@ -67,22 +55,14 @@ const checkEnvironment = () => {
 checkEnvironment();
 connectDB();
 
-// --- Firebase Auth Middleware ---
-const authenticateToken = async (req, res, next) => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'No token provided' });
-        }
-
-        const token = authHeader.split('Bearer ')[1];
-        const decodedToken = await admin.auth().verifyIdToken(token);
-        req.user = decodedToken;
-        next();
-    } catch (error) {
-        console.error('Firebase auth error:', error);
-        res.status(401).json({ error: 'Invalid token' });
+// --- Simple User ID Middleware ---
+const getUserFromRequest = (req) => {
+    // Get userId from query params, body, or headers
+    const userId = req.query.userId || req.body.userId || req.headers['x-user-id'];
+    if (!userId) {
+        throw new Error('User ID is required');
     }
+    return userId;
 };
 
 // --- Optional Rate Limiter Setup (Redis) ---
@@ -129,16 +109,16 @@ app.use(express.json());
 
 // --- ROUTES ---
 
-const chatMiddleware = [authenticateToken];
+const chatMiddleware = [];
 if (rateLimiterMiddleware && process.env.NODE_ENV === 'production') {
     chatMiddleware.push(rateLimiterMiddleware);
 }
 
 // --- /conversations Endpoint ---
-// This endpoint fetches a list of all unique conversations for the logged-in user.
-app.get('/conversations', authenticateToken, async (req, res) => {
+// This endpoint fetches a list of all unique conversations for the user.
+app.get('/conversations', async (req, res) => {
     try {
-        const userId = req.user.uid;
+        const userId = getUserFromRequest(req);
         const conversations = await Chat.aggregate([
             { $match: { userId: userId } },
             { $sort: { timestamp: 1 } },
@@ -152,41 +132,41 @@ app.get('/conversations', authenticateToken, async (req, res) => {
         res.json(conversations);
     } catch (error) {
         console.error('Error fetching conversations:', error);
-        res.status(500).json({ error: 'Failed to fetch conversations.' });
+        res.status(400).json({ error: error.message || 'Failed to fetch conversations.' });
     }
 });
 
 // Delete all conversations for a user
-app.delete('/conversations', authenticateToken, async (req, res) => {
+app.delete('/conversations', async (req, res) => {
     try {
-        const userId = req.user.uid;
+        const userId = getUserFromRequest(req);
         await Chat.deleteMany({ userId });
         res.status(200).json({ success: true, message: 'All conversations deleted successfully.' });
     } catch (error) {
         console.error('Error deleting conversations:', error);
-        res.status(500).json({ error: 'Failed to delete conversations.' });
+        res.status(400).json({ error: error.message || 'Failed to delete conversations.' });
     }
 });
 
 // --- /history/:conversationId Endpoint ---
 // This endpoint fetches the full message history for a single, specific conversation.
-app.get('/history/:conversationId', authenticateToken, async (req, res) => {
+app.get('/history/:conversationId', async (req, res) => {
     try {
-        const userId = req.user.uid;
+        const userId = getUserFromRequest(req);
         const { conversationId } = req.params;
         const chatHistory = await Chat.find({ userId, conversationId }).sort({ timestamp: 1 });
         res.json(chatHistory);
     } catch (error) {
         console.error('Error fetching chat history:', error.message);
-        res.status(500).json({ error: 'Server Error', message: 'Failed to fetch chat history.' });
+        res.status(400).json({ error: error.message || 'Server Error', message: 'Failed to fetch chat history.' });
     }
 });
 
 // --- /feedback Endpoint ---
 // This endpoint saves user feedback (good/bad) for a specific message.
-app.post('/feedback', authenticateToken, async (req, res) => {
+app.post('/feedback', async (req, res) => {
     try {
-        const userId = req.user.uid;
+        const userId = getUserFromRequest(req);
         const { chatId, rating } = req.body;
         if (!chatId || !['good', 'bad'].includes(rating)) {
             return res.status(400).json({ error: 'Invalid feedback payload' });
@@ -195,16 +175,15 @@ app.post('/feedback', authenticateToken, async (req, res) => {
         res.status(200).json({ success: true });
     } catch (error) {
         console.error('Error saving feedback:', error);
-        res.status(500).json({ error: 'Failed to save feedback.' });
+        res.status(400).json({ error: error.message || 'Failed to save feedback.' });
     }
 });
 
 app.post('/chat', chatMiddleware, async (req, res) => {
-    const { message, conversationId, model } = req.body;
-    const userId = req.user.uid;
+    const { message, conversationId, model, userId } = req.body;
 
-    if (!message || !conversationId || !model) {
-        return res.status(400).json({ error: 'Missing message, conversationId, or model' });
+    if (!message || !conversationId || !model || !userId) {
+        return res.status(400).json({ error: 'Missing message, conversationId, model, or userId' });
     }
 
     try {
@@ -273,9 +252,9 @@ Always specify the programming language for code blocks (e.g., \`\`\`javascript,
 });
 
 // --- /conversations/:conversationId DELETE Endpoint ---
-app.delete('/conversations/:conversationId', authenticateToken, async (req, res) => {
+app.delete('/conversations/:conversationId', async (req, res) => {
     try {
-        const userId = req.user.uid;
+        const userId = getUserFromRequest(req);
         const { conversationId } = req.params;
         
         // Delete all messages in the conversation
@@ -288,7 +267,7 @@ app.delete('/conversations/:conversationId', authenticateToken, async (req, res)
         }
     } catch (error) {
         console.error('Error deleting conversation:', error);
-        res.status(500).json({ error: 'Failed to delete conversation' });
+        res.status(400).json({ error: error.message || 'Failed to delete conversation' });
     }
 });
 

@@ -1,21 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import useFirebaseAuth from './hooks/useFirebaseAuth';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import {
-  Box, AppBar, Toolbar, Typography, IconButton, TextField, CircularProgress, Paper, Avatar, Drawer, CssBaseline, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Button, Tooltip, Menu, MenuItem
+  Box, Typography, IconButton, TextField, CircularProgress, Paper, Avatar, Drawer, CssBaseline, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, Button, Tooltip, Menu, MenuItem
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
 import SendIcon from '@mui/icons-material/Send';
 import MicIcon from '@mui/icons-material/Mic';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import ShareIcon from '@mui/icons-material/Share';
@@ -59,10 +55,10 @@ const CopyButton = ({ code }) => {
                     position: 'absolute',
                     top: 8,
                     right: 8,
-                    bgcolor: 'rgba(0, 0, 0, 0.5)',
+                    bgcolor: 'rgba(0, 0, 0, 0)',
                     color: 'white',
                     '&:hover': {
-                        bgcolor: 'rgba(0, 0, 0, 0.7)',
+                        bgcolor: 'rgba(0, 0, 0, 0)',
                     },
                     zIndex: 1
                 }}
@@ -70,177 +66,6 @@ const CopyButton = ({ code }) => {
                 {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
             </IconButton>
         </Tooltip>
-    );
-};
-
-// Message actions component for copy and share
-const MessageActions = ({ content, role }) => {
-    const [copied, setCopied] = useState(false);
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [shareMenuOpen, setShareMenuOpen] = useState(false);
-
-    const handleCopy = async () => {
-        try {
-            await navigator.clipboard.writeText(content);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error('Failed to copy message:', err);
-        }
-    };
-
-    const handleShare = async () => {
-        try {
-            if (navigator.share) {
-                await navigator.share({
-                    title: 'Echo AI Chat',
-                    text: content,
-                    url: window.location.href
-                });
-            } else {
-                setShareMenuOpen(true);
-            }
-        } catch (err) {
-            console.error('Failed to share:', err);
-        }
-    };
-
-    const handleMenuClick = (event) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-    };
-
-    const handleShareMenuClose = () => {
-        setShareMenuOpen(false);
-    };
-
-    const shareToTwitter = () => {
-        const text = encodeURIComponent(content.length > 100 ? content.substring(0, 100) + '...' : content);
-        window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(window.location.href)}`, '_blank');
-        handleShareMenuClose();
-    };
-
-    const shareToLinkedIn = () => {
-        const text = encodeURIComponent(content.length > 100 ? content.substring(0, 100) + '...' : content);
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&title=${encodeURIComponent('Echo AI Chat')}&summary=${text}`, '_blank');
-        handleShareMenuClose();
-    };
-
-    const shareToWhatsApp = () => {
-        const text = encodeURIComponent(content.length > 100 ? content.substring(0, 100) + '...' : content);
-        window.open(`https://wa.me/?text=${text}%20${encodeURIComponent(window.location.href)}`, '_blank');
-        handleShareMenuClose();
-    };
-
-    return (
-        <>
-            <Box sx={{ 
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                display: 'flex',
-                gap: 0.5,
-                opacity: 0,
-                transition: 'opacity 0.2s',
-                zIndex: 2
-            }}>
-                <Tooltip title={copied ? "Copied!" : "Copy message"}>
-                    <IconButton
-                        onClick={handleCopy}
-                        size="small"
-                        sx={{
-                            bgcolor: 'rgba(0, 0, 0, 0.5)',
-                            color: 'white',
-                            '&:hover': {
-                                bgcolor: 'rgba(0, 0, 0, 0.7)',
-                            }
-                        }}
-                    >
-                        {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
-                    </IconButton>
-                </Tooltip>
-                <Tooltip title="Share message">
-                    <IconButton
-                        onClick={handleShare}
-                        size="small"
-                        sx={{
-                            bgcolor: 'rgba(0, 0, 0, 0.5)',
-                            color: 'white',
-                            '&:hover': {
-                                bgcolor: 'rgba(0, 0, 0, 0.7)',
-                            }
-                        }}
-                    >
-                        <ShareIcon fontSize="small" />
-                    </IconButton>
-                </Tooltip>
-                <Tooltip title="More options">
-                    <IconButton
-                        onClick={handleMenuClick}
-                        size="small"
-                        sx={{
-                            bgcolor: 'rgba(0, 0, 0, 0.5)',
-                            color: 'white',
-                            '&:hover': {
-                                bgcolor: 'rgba(0, 0, 0, 0.7)',
-                            }
-                        }}
-                    >
-                        <MoreVertIcon fontSize="small" />
-                    </IconButton>
-                </Tooltip>
-            </Box>
-
-            {/* More options menu */}
-            <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-                PaperProps={{
-                    sx: {
-                        bgcolor: 'background.paper',
-                        border: '1px solid',
-                        borderColor: 'divider'
-                    }
-                }}
-            >
-                <MenuItem onClick={handleCopy}>
-                    <ContentCopyIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-                    Copy
-                </MenuItem>
-                <MenuItem onClick={handleShare}>
-                    <ShareIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-                    Share
-                </MenuItem>
-            </Menu>
-
-            {/* Share options menu */}
-            <Menu
-                anchorEl={anchorEl}
-                open={shareMenuOpen}
-                onClose={handleShareMenuClose}
-                PaperProps={{
-                    sx: {
-                        bgcolor: 'background.paper',
-                        border: '1px solid',
-                        borderColor: 'divider'
-                    }
-                }}
-            >
-                <MenuItem onClick={shareToTwitter}>
-                    <Typography>Share on Twitter</Typography>
-                </MenuItem>
-                <MenuItem onClick={shareToLinkedIn}>
-                    <Typography>Share on LinkedIn</Typography>
-                </MenuItem>
-                <MenuItem onClick={shareToWhatsApp}>
-                    <Typography>Share on WhatsApp</Typography>
-                </MenuItem>
-            </Menu>
-        </>
     );
 };
 
@@ -260,6 +85,12 @@ const MarkdownRenderer = ({ content }) => {
                                     style={oneDark}
                                     language={match[1]}
                                     PreTag="div"
+                                    customStyle={{
+                                        margin: 0,
+                                        borderRadius: '8px',
+                                        fontSize: '0.875rem',
+                                        lineHeight: 1.5,
+                                    }}
                                     {...props}
                                 >
                                     {String(children).replace(/\n$/, '')}
@@ -372,7 +203,7 @@ const MarkdownRenderer = ({ content }) => {
                             {children}
                         </Typography>
                     ),
-                    code: ({ children }) => (
+                    inlineCode: ({ children }) => (
                         <Typography
                             component="code"
                             sx={{
@@ -402,95 +233,44 @@ const ThinkingAnimation = ({ model, isVisible }) => {
         <Box sx={{ 
             display: 'flex', 
             justifyContent: 'flex-start',
-            mb: 2
+            mb: 2,
+            width: '100%'
         }}>
-            <Paper elevation={1} sx={{ 
-                p: { xs: 1.5, sm: 2 }, 
-                bgcolor: 'background.paper', 
-                borderRadius: '16px 16px 16px 4px',
-                maxWidth: { xs: '90%', sm: '75%' },
+            <Box sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1
+                gap: 1,
+                animation: 'pulse 1.5s ease-in-out infinite'
             }}>
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    animation: 'pulse 1.5s ease-in-out infinite'
-                }}>
-                    <Avatar 
-                        src={models[model].logo} 
-                        sx={{
-                            width: 24, 
-                            height: 24,
-                            animation: 'bounce 2s infinite'
-                        }}
-                    />
-                    <Typography variant="body2" color="text.secondary">
-                        {models[model].name} is thinking...
-                    </Typography>
-                </Box>
-                <style>
-                    {`
-                        @keyframes pulse {
-                            0% { opacity: 0.6; }
-                            50% { opacity: 1; }
-                            100% { opacity: 0.6; }
+                <Avatar 
+                    src={models[model].logo} 
+                    sx={{
+                        width: 24, 
+                        height: 24,
+                        animation: 'bounce 2s infinite'
+                    }}
+                />
+            </Box>
+            <style>
+                {`
+                    @keyframes pulse {
+                        0% { opacity: 0.6; }
+                        50% { opacity: 1; }
+                        100% { opacity: 0.6; }
+                    }
+                    @keyframes bounce {
+                        0%, 20%, 50%, 80%, 100% {
+                            transform: translateY(0);
                         }
-                        @keyframes bounce {
-                            0%, 20%, 50%, 80%, 100% {
-                                transform: translateY(0);
-                            }
-                            40% {
-                                transform: translateY(-4px);
-                            }
-                            60% {
-                                transform: translateY(-2px);
-                            }
+                        40% {
+                            transform: translateY(-4px);
                         }
-                    `}
-                </style>
-            </Paper>
-        </Box>
-    );
-};
-
-const LoginScreen = () => {
-    const { loginWithRedirect } = useFirebaseAuth();
-    
-    const handleLogin = () => {
-        loginWithRedirect();
-    };
-
-    return (
-        <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: 2, 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            height: '100vh', 
-            textAlign: 'center' 
-        }}>
-            <Typography variant="h2" gutterBottom>Welcome to Echo</Typography>
-            <Typography variant="h6" color="text.secondary" sx={{mb: 3}}>
-                Your AI-powered chat assistant
-            </Typography>
-            <Button 
-                variant="contained" 
-                size="large" 
-                onClick={handleLogin}
-                sx={{ 
-                    px: 4, 
-                    py: 1.5,
-                    borderRadius: '12px',
-                    textTransform: 'none',
-                    fontSize: '1.1rem'
-                }}
-            >
-                Sign in with Google
-            </Button>
+                        60% {
+                            transform: translateY(-2px);
+                        }
+                    }
+                `}
+            </style>
         </Box>
     );
 };
@@ -537,8 +317,6 @@ const ModelSelector = ({ currentModel, setCurrentModel }) => {
 
 // --- Main App Component ---
 const App = () => {
-    const { user, logout, isAuthenticated, isLoading: isAuthLoading, getAccessTokenSilently } = useFirebaseAuth();
-    
     // --- State Management ---
     const [inputValue, setInputValue] = useState("");
     const [chatHistory, setChatHistory] = useState([]);
@@ -550,9 +328,21 @@ const App = () => {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [currentModel, setCurrentModel] = useState('gemini');
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [userId] = useState(() => {
+        // Get or create a persistent user ID
+        const stored = localStorage.getItem('echo_user_id');
+        if (stored) return stored;
+        const newId = `user_${uuidv4()}`;
+        localStorage.setItem('echo_user_id', newId);
+        return newId;
+    });
     const chatContainerRef = useRef(null);
     const currentLoadingConversationRef = useRef(null);
     const { isListening, toggleListening } = useSpeechRecognition((text) => setInputValue(text));
+
+    // --- Sidebar More Menu State ---
+    const [sidebarMenuAnchorEl, setSidebarMenuAnchorEl] = useState(null);
+    const [sidebarMenuChatId, setSidebarMenuChatId] = useState(null);
 
     // Ensure conversations is always an array
     const safeConversations = Array.isArray(conversations) ? conversations : [];
@@ -560,7 +350,9 @@ const App = () => {
     // --- Logic and Handlers ---
     const scrollToBottom = () => {
         if (chatContainerRef.current) {
-            chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+            setTimeout(() => {
+                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+            }, 100);
         }
     };
 
@@ -571,17 +363,10 @@ const App = () => {
     }, []);
 
     const fetchConversations = useCallback(async () => {
-        if (!isAuthenticated) return;
         try {
-            const token = await getAccessTokenSilently();
-            console.log('Fetching conversations with token:', token ? 'Present' : 'Missing');
-            
-            const response = await fetch(`${API_URL}/conversations`, { headers: { Authorization: `Bearer ${token}` } });
-            console.log('Conversations response status:', response.status);
+            const response = await fetch(`${API_URL}/conversations?userId=${userId}`);
             
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Conversations API error:', errorText);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
@@ -623,21 +408,18 @@ const App = () => {
         } finally {
             setIsInitialLoad(false);
         }
-    }, [isAuthenticated, getAccessTokenSilently, currentConversationId]); // Remove handleNewConversation from dependencies
+    }, [userId, currentConversationId]);
 
     // Fetch chat history when conversation changes
     const fetchChatHistory = useCallback(async (conversationId) => {
-        if (!conversationId || !isAuthenticated) return;
+        if (!conversationId) return;
         
         // Prevent race conditions by tracking which conversation is being loaded
         currentLoadingConversationRef.current = conversationId;
         setIsLoadingHistory(true);
         
         try {
-            const token = await getAccessTokenSilently();
-            const response = await fetch(`${API_URL}/history/${conversationId}`, { 
-                headers: { Authorization: `Bearer ${token}` } 
-            });
+            const response = await fetch(`${API_URL}/history/${conversationId}?userId=${userId}`);
             
             // Check if this is still the conversation we want to load
             if (currentLoadingConversationRef.current !== conversationId) {
@@ -666,33 +448,71 @@ const App = () => {
                 setIsLoadingHistory(false);
             }
         }
-    }, [isAuthenticated, getAccessTokenSilently]);
+    }, [userId]);
 
     const sendPrompt = useCallback(async (message) => {
         if (!currentConversationId || !message) return;
+        
         const conversationIdToUse = currentConversationId.startsWith('temp_') ? uuidv4() : currentConversationId;
         if (currentConversationId.startsWith('temp_')) setCurrentConversationId(conversationIdToUse);
         
         setChatHistory(prev => [...prev, { _id: `temp_msg_${Date.now()}`, role: "user", parts: message }]);
         setIsLoadingResponse(true);
         
+        // Add a placeholder for the streaming AI response
+        const streamingMessageId = `temp_ai_${Date.now()}`;
+        setChatHistory(prev => [...prev, { 
+            _id: streamingMessageId, 
+            role: "assistant", 
+            parts: "",
+            isStreaming: true
+        }]);
+        
         try {
-            const token = await getAccessTokenSilently();
             const response = await fetch(`${API_URL}/chat`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ message, conversationId: conversationIdToUse, model: currentModel }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    message, 
+                    conversationId: conversationIdToUse, 
+                    model: currentModel,
+                    userId: userId 
+                }),
             });
 
-            if (!response.ok) throw new Error((await response.json()).error || 'An error occurred.');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'An error occurred.');
+            }
 
-            // Get the response data and add it to chat history locally
+            // Get the response data and stream it character by character
             const responseData = await response.json();
-            setChatHistory(prev => [...prev, { 
-                _id: `temp_ai_${Date.now()}`, 
-                role: "assistant", 
-                parts: responseData.response || responseData.message || "Response received"
-            }]);
+            const fullResponse = responseData.message || "Response received";
+            
+            // Stop the thinking animation once we have the response
+            setIsLoadingResponse(false);
+            
+            // Stream the response character by character
+            let currentText = "";
+            const streamSpeed = 30; // milliseconds per character
+            
+            for (let i = 0; i < fullResponse.length; i++) {
+                currentText += fullResponse[i];
+                const textToShow = currentText; // Capture current value
+                setChatHistory(prev => prev.map(msg => 
+                    msg._id === streamingMessageId 
+                        ? { ...msg, parts: textToShow }
+                        : msg
+                ));
+                await new Promise(resolve => setTimeout(resolve, streamSpeed));
+            }
+            
+            // Mark streaming as complete
+            setChatHistory(prev => prev.map(msg => 
+                msg._id === streamingMessageId 
+                    ? { ...msg, isStreaming: false }
+                    : msg
+            ));
             
             // Only fetch conversations if this was a new conversation (temp_ conversation)
             if (currentConversationId.startsWith('temp_')) {
@@ -701,16 +521,18 @@ const App = () => {
 
         } catch (err) {
             console.error(err.message);
-            // Add error message to chat history
-            setChatHistory(prev => [...prev, { 
-                _id: `temp_error_${Date.now()}`, 
-                role: "assistant", 
-                parts: "Sorry, I encountered an error. Please try again."
-            }]);
-        } finally {
-            setIsLoadingResponse(false);
+            // Update the streaming message with error
+            setChatHistory(prev => prev.map(msg => 
+                msg._id === streamingMessageId 
+                    ? { 
+                        ...msg, 
+                        parts: "Sorry, I encountered an error. Please try again.",
+                        isStreaming: false 
+                    }
+                    : msg
+            ));
         }
-    }, [currentConversationId, getAccessTokenSilently, fetchConversations, currentModel]); // Remove fetchChatHistory from dependencies
+    }, [currentConversationId, fetchConversations, currentModel, userId]);
     
     const handleFormSubmit = (e) => {
         e.preventDefault();
@@ -733,17 +555,15 @@ const App = () => {
 
     // Load chat history when conversation changes
     useEffect(() => {
-        if (currentConversationId && !currentConversationId.startsWith('temp_') && isAuthenticated) {
+        if (currentConversationId && !currentConversationId.startsWith('temp_')) {
             fetchChatHistory(currentConversationId);
         }
-    }, [currentConversationId, isAuthenticated]);
+    }, [currentConversationId, fetchChatHistory]);
 
     const handleDeleteConversation = useCallback(async (convoId) => {
         try {
-            const token = await getAccessTokenSilently();
-            const response = await fetch(`${API_URL}/conversations/${convoId}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
+            const response = await fetch(`${API_URL}/conversations/${convoId}?userId=${userId}`, {
+                method: 'DELETE'
             });
             
             if (response.ok) {
@@ -760,26 +580,49 @@ const App = () => {
         } catch (error) {
             console.error('Error deleting conversation:', error);
         }
-    }, [getAccessTokenSilently, currentConversationId]); // Remove handleNewConversation from dependencies
+    }, [userId, currentConversationId]);
 
     useEffect(() => {
-        if (isAuthenticated && isInitialLoad) {
+        if (isInitialLoad) {
             fetchConversations();
         }
-    }, [isAuthenticated, isInitialLoad]); // Only fetch on initial load and auth changes
+    }, [isInitialLoad, fetchConversations]);
 
     // Scroll to bottom when chat history changes
     useEffect(() => {
         scrollToBottom();
     }, [chatHistory, isLoadingResponse]);
 
-    if (isAuthLoading) {
-        return <Loading />;
-    }
-
-    if (!isAuthenticated) {
-        return <LoginScreen />;
-    }
+    const handleSidebarMenuOpen = (event, chatId) => {
+        setSidebarMenuAnchorEl(event.currentTarget);
+        setSidebarMenuChatId(chatId);
+    };
+    const handleSidebarMenuClose = () => {
+        setSidebarMenuAnchorEl(null);
+        setSidebarMenuChatId(null);
+    };
+    const handleSidebarShare = () => {
+        const chat = safeConversations.find(c => c._id === sidebarMenuChatId);
+        if (chat) {
+            const text = chat.firstMessage || 'New Chat';
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Echo AI Chat',
+                    text,
+                    url: window.location.href
+                });
+            } else {
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`, '_blank');
+            }
+        }
+        handleSidebarMenuClose();
+    };
+    const handleSidebarDelete = () => {
+        if (sidebarMenuChatId) {
+            handleDeleteConversation(sidebarMenuChatId);
+        }
+        handleSidebarMenuClose();
+    };
 
     const drawerContent = (
         <Box sx={{ 
@@ -805,56 +648,59 @@ const App = () => {
             {/* Chat History Section */}
             <Typography variant="overline" sx={{ px: 2, pt: 1, color: 'text.secondary' }}>Chats</Typography>
             <List sx={{ flexGrow: 1, overflowY: 'auto', pb: 0 }}>
-                {safeConversations.map((conv) => (
-                    <ListItem 
-                        key={conv._id} 
-                        disablePadding
-                        sx={{
-                            bgcolor: currentConversationId === conv._id ? 'rgba(255,255,255,0.1)' : 'transparent',
-                            borderRadius: '8px',
-                            mx: 1,
-                            mb: 0.5,
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
-                        }}
-                    >
-                        <ListItemButton onClick={() => handleSelectConversation(conv._id)} sx={{ pr: 1 }}>
-                            <ListItemIcon sx={{ minWidth: '40px' }}>
-                                <ChatBubbleOutlineIcon sx={{ color: 'text.secondary' }} />
-                            </ListItemIcon>
-                            <ListItemText primary={conv.firstMessage || 'New Chat'} primaryTypographyProps={{ noWrap: true }} />
-                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                <Tooltip title="Copy conversation title">
+                {safeConversations.map((conv) => {
+                    // Generate a short summary (first 2-3 words) for the chat name
+                    const summary = conv.firstMessage
+                        ? conv.firstMessage.split(' ').slice(0, 3).join(' ') + (conv.firstMessage.split(' ').length > 3 ? '...' : '')
+                        : 'New Chat';
+                    return (
+                        <ListItem 
+                            key={conv._id} 
+                            disablePadding
+                            sx={{
+                                bgcolor: currentConversationId === conv._id ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                borderRadius: '8px',
+                                mx: 1,
+                                mb: 0.5,
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
+                            }}
+                        >
+                            <ListItemButton onClick={() => handleSelectConversation(conv._id)} sx={{ pr: 1 }}>
+                                <ListItemText primary={summary} primaryTypographyProps={{ noWrap: true }} />
+                                <Tooltip title="More options">
                                     <IconButton 
                                         size="small" 
-                                        onClick={(e) => { 
-                                            e.stopPropagation(); 
-                                            navigator.clipboard.writeText(conv.firstMessage || 'New Chat');
-                                        }}
-                                        sx={{ 
-                                            visibility: currentConversationId === conv._id ? 'visible' : 'hidden',
-                                            '&:hover': { visibility: 'visible' }
-                                        }}
+                                        onClick={(e) => { e.stopPropagation(); handleSidebarMenuOpen(e, conv._id); }}
                                     >
-                                        <ContentCopyIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                                        <MoreVertIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                                     </IconButton>
                                 </Tooltip>
-                                <IconButton 
-                                    size="small" 
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteConversation(conv._id); }}
-                                    sx={{ 
-                                        visibility: currentConversationId === conv._id ? 'visible' : 'hidden',
-                                        '&:hover': { visibility: 'visible' }
-                                    }}
-                                >
-                                    <DeleteIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                                </IconButton>
-                            </Box>
-                        </ListItemButton>
-                    </ListItem>
-                ))}
+                            </ListItemButton>
+                        </ListItem>
+                    );
+                })}
             </List>
 
-            {/* Bottom section: Settings, Logout */}
+            {/* Sidebar More Menu */}
+            <Menu
+                anchorEl={sidebarMenuAnchorEl}
+                open={Boolean(sidebarMenuAnchorEl)}
+                onClose={handleSidebarMenuClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{ sx: { minWidth: 180 } }}
+            >
+                <MenuItem onClick={handleSidebarShare}>
+                    <ShareIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
+                    Share
+                </MenuItem>
+                <MenuItem onClick={handleSidebarDelete}>
+                    <DeleteIcon sx={{ mr: 1, fontSize: '1.2rem', color: 'error.main' }} />
+                    <Typography color="error.main">Delete</Typography>
+                </MenuItem>
+            </Menu>
+
+            {/* Bottom section: Settings */}
             <Divider sx={{ mx: 2, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
             <List sx={{ pb: 1 }}>
                 <ListItem disablePadding>
@@ -863,14 +709,6 @@ const App = () => {
                             <SettingsIcon sx={{ color: 'text.secondary' }} />
                         </ListItemIcon>
                         <ListItemText primary="Settings" />
-                    </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                    <ListItemButton onClick={logout}>
-                        <ListItemIcon sx={{ minWidth: '40px' }}>
-                            <AccountCircleIcon sx={{ color: 'text.secondary' }} />
-                        </ListItemIcon>
-                        <ListItemText primary="Logout" />
                     </ListItemButton>
                 </ListItem>
             </List>
@@ -927,52 +765,6 @@ const App = () => {
                     bgcolor: '#131314'
                 }}
             >
-                <AppBar 
-                    position="fixed" 
-                    elevation={0}
-                    sx={{
-                        width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` }, 
-                        ml: { xs: 0, md: `${DRAWER_WIDTH}px` },
-                        bgcolor: '#131314',
-                        boxShadow: 'none',
-                        backdropFilter: 'none',
-                        borderBottom: 'none',
-                        zIndex: (theme) => theme.zIndex.drawer + 1 
-                    }}
-                >
-                    <Toolbar disableGutters>
-                        <IconButton
-                            color="inherit"
-                            aria-label="open drawer"
-                            edge="start"
-                            onClick={handleDrawerToggle}
-                            sx={{ mr: 2, display: { md: 'none' } }}
-                        >
-                            <MenuIcon />
-                        </IconButton>
-                        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                            
-                        </Typography>
-                        <IconButton 
-                            color="inherit" 
-                            onClick={() => setSettingsOpen(true)}
-                            sx={{ 
-                                '&:hover': { 
-                                    bgcolor: 'rgba(255, 255, 255, 0.1)' 
-                                } 
-                            }}
-                        >
-                            <Avatar 
-                                src={user?.photoURL} 
-                                alt={user?.displayName}
-                                sx={{ width: 32, height: 32 }}
-                            />
-                        </IconButton>
-                    </Toolbar>
-                </AppBar>
-
-                <Toolbar /> {/* Spacer to push content below fixed AppBar */}
-
                 <Box
                     ref={chatContainerRef}
                     sx={{
@@ -980,6 +772,7 @@ const App = () => {
                         overflow: 'auto',
                         px: { xs: 2, sm: 3 },
                         position: 'relative',
+                        scrollBehavior: 'smooth',
                         '&::-webkit-scrollbar': {
                             display: 'none'
                         },
@@ -991,16 +784,16 @@ const App = () => {
                             top: 0,
                             left: { xs: 0, md: `${DRAWER_WIDTH}px` },
                             right: 0,
-                            height: '150px',
+                            height: '80px',
                             background: 'linear-gradient(180deg, rgba(19, 19, 20, 1) 0%, rgba(19, 19, 20, 0.8) 50%, rgba(19, 19, 20, 0) 100%)',
                             pointerEvents: 'none',
                             zIndex: 2
-                        }
+                        },
                     }}
                 >
                     {isInitialLoad || isLoadingHistory ? (
                         <Loading />
-                    ) : chatHistory.length === 0 ? (
+                    ) : chatHistory.length === 0 && !isLoadingResponse ? (
                         <Box sx={{ 
                             minHeight: '100%',
                             width: '100%',
@@ -1011,13 +804,9 @@ const App = () => {
                             p: 3, 
                             textAlign: 'center',
                         }}>
-                            {user && (
-                                <Typography variant="h5" sx={{ mb: 2, color: 'text.secondary' }}>
-                                    Hello, {user.displayName || user.email}
-                                </Typography>
-                            )}
                             <Typography variant="h2" gutterBottom>Welcome</Typography>
                             <Typography variant="h6" color="text.secondary" sx={{mb: 3}}>
+                                Your AI-powered chat assistant
                             </Typography>
                         </Box>
                     ) : (
@@ -1025,50 +814,116 @@ const App = () => {
                             display: 'flex', 
                             flexDirection: 'column', 
                             gap: 2,
+                            alignItems: 'center',
                             position: 'relative',
                             zIndex: 1,
                             pt: { xs: 2, sm: 3 },
                             pb: { xs: 2, sm: 3 },
                             px: { xs: 2, sm: 3 },
+                            mx: 'auto',
+                            width: '100%',
+                            maxWidth: { xs: '100%', sm: '80%', md: '60%' },
+                            minHeight: '100%',
+                            justifyContent: 'flex-end',
                         }}>
-                            {chatHistory.map((item) => (
-                                <Box key={item._id || `temp_${Math.random()}`} sx={{ 
-                                    display: 'flex', 
-                                    justifyContent: item.role === 'user' ? 'flex-end' : 'flex-start' 
-                                }}>
-                                    <Paper elevation={1} sx={{ 
-                                        p: { xs: 1.5, sm: 2 }, 
-                                        bgcolor: item.role === 'user' ? 'white' : 'background.paper', 
-                                        color: item.role === 'user' ? 'background.default' : 'text.primary', 
-                                        borderRadius: item.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                                        maxWidth: { xs: '90%', sm: '75%' },
-                                        position: 'relative',
-                                        '&:hover .message-actions': {
-                                            opacity: 1
-                                        },
-                                        '& pre': {
-                                            margin: 0,
-                                            borderRadius: 1,
-                                            overflow: 'auto'
-                                        },
-                                        '& code': {
-                                            fontFamily: 'monospace'
-                                        }
-                                    }}>
-                                        {/* Message Actions */}
-                                        <Box className="message-actions">
-                                            <MessageActions content={item.parts} role={item.role} />
+                            {chatHistory.map((item, idx) => (
+                                <React.Fragment key={item._id || `temp_${Math.random()}`}> 
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            justifyContent: item.role === 'user' ? 'flex-end' : 'flex-start',
+                                            width: '100%',
+                                            position: 'relative',
+                                            mb: 1,
+                                        }}
+                                    >
+                                        <Paper elevation={1} sx={{ 
+                                            p: { xs: 1.5, sm: 2 }, 
+                                            bgcolor: item.role === 'user' ? 'white' : '#131314', 
+                                            color: item.role === 'user' ? 'background.default' : 'text.primary', 
+                                            borderRadius: '32px',
+                                            maxWidth: '100%',
+                                            minWidth: 0,
+                                            marginLeft: item.role === 'user' ? 'auto' : 0,
+                                            marginRight: item.role === 'user' ? 0 : 'auto',
+                                            position: 'relative',
+                                            boxShadow: 3,
+                                            '& pre': {
+                                                margin: 0,
+                                                borderRadius: 1,
+                                                overflow: 'auto'
+                                            },
+                                            '& code': {
+                                                fontFamily: 'monospace'
+                                            }
+                                        }}>
+                                            {item.role === 'user' ? (
+                                                <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                                                    {item.parts}
+                                                </Typography>
+                                            ) : (
+                                                <MarkdownRenderer content={item.parts} />
+                                            )}
+                                        </Paper>
+                                    </Box>
+                                    {/* Copy and Share buttons for AI responses only, positioned below the bubble */}
+                                    {item.role !== 'user' && (
+                                        <Box sx={{
+                                            display: 'flex',
+                                            justifyContent: 'flex-start',
+                                            gap: 1,
+                                            mt: 1,
+                                            mb: 0.5,
+                                            width: '100%',
+                                            ml: { xs: 2, sm: 3 },
+                                        }}>
+                                            <Tooltip title="Copy response">
+                                                <IconButton
+                                                    onClick={() => navigator.clipboard.writeText(item.parts)}
+                                                    size="small"
+                                                    sx={{
+                                                        bgcolor: 'rgba(0, 0, 0, 0.08)',
+                                                        color: 'text.secondary',
+                                                        '&:hover': {
+                                                            bgcolor: 'rgba(0, 0, 0, 0.18)'
+                                                        },
+                                                    }}
+                                                >
+                                                    <ContentCopyIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Share response">
+                                                <IconButton
+                                                    onClick={() => {
+                                                        if (navigator.share) {
+                                                            navigator.share({
+                                                                title: 'Echo AI Response',
+                                                                text: item.parts,
+                                                                url: window.location.href
+                                                            });
+                                                        } else {
+                                                            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(item.parts)}&url=${encodeURIComponent(window.location.href)}`, '_blank');
+                                                        }
+                                                    }}
+                                                    size="small"
+                                                    sx={{
+                                                        bgcolor: 'rgba(0, 0, 0, 0.08)',
+                                                        color: 'text.secondary',
+                                                        '&:hover': {
+                                                            bgcolor: 'rgba(0, 0, 0, 0.18)'
+                                                        },
+                                                    }}
+                                                >
+                                                    <ShareIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
                                         </Box>
-                                        
-                                        {item.role === 'user' ? (
-                                            <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                                                {item.parts}
-                                            </Typography>
-                                        ) : (
-                                            <MarkdownRenderer content={item.parts} />
-                                        )}
-                                    </Paper>
-                                </Box>
+                                    )}
+                                    {/* Divider after each bubble except the last one */}
+                                    {idx < chatHistory.length - 1 && (
+                                        <Divider sx={{ my: 2, borderColor: 'divider', width: '100%', maxWidth: { xs: '100%', sm: '100%', md: '100%' }, mx: 'auto' }} />
+                                    )}
+                                </React.Fragment>
                             ))}
                             
                             {/* Thinking Animation */}
@@ -1094,18 +949,27 @@ const App = () => {
                 />
                 
                 {/* Input Bar Section */}
-                <Box sx={{ 
-                    display: 'flex',
-                    justifyContent: 'center',
-                    py: { xs: 2, sm: 3 },
-                    bgcolor: 'transparent'
-                }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        paddingBottom: '40px',
+                        bgcolor: 'transparent',
+                        position: 'relative',
+                        zIndex: 10,
+                    }}
+                    style={{
+                        background: 'transparent',
+                        backgroundColor: 'transparent',
+                    }}
+                >
                     <Box sx={{ 
-                        width: { xs: '100%', sm: '60%', md: '50%' },
+                        width: { xs: '100%', sm: '60%', md: '60%' },
                         maxWidth: { md: `calc(100% - ${DRAWER_WIDTH}px - 32px)` },
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        zIndex: 2
                     }}>
                         {/* Input on top */}
                         <Paper component="form" sx={{ 
@@ -1114,27 +978,30 @@ const App = () => {
                             flexDirection: 'column',
                             alignItems: 'stretch',
                             borderRadius: '32px',
-                            boxShadow: 3,
+                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0)',
                             width: '100%',
                             bgcolor: 'transparent',
+                            background: 'transparent',
                             border: '1px solid',
                             borderColor: 'divider',
                             paddingTop: 1,
                             minHeight: 80
-                        }} onSubmit={handleFormSubmit}>
+                        }} 
+                        style={{ background: 'transparent', backgroundColor: 'transparent' }}
+                        onSubmit={handleFormSubmit}>
                             <TextField
                                 fullWidth
                                 multiline
                                 maxRows={5} 
                                 variant="standard" 
-                                placeholder="Ask anything"
+                                placeholder="Ask anything..."
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleFormSubmit(e))} 
                                 InputProps={{ 
                                     disableUnderline: true, 
                                     sx: {
-                                        p: { xs: '0 8px', sm: '0 10px' },
+                                        p: { xs: '0 20px', sm: '2px 30px' },
                                         fontSize: { xs: '0.8rem', sm: '0.9rem' },
                                         bgcolor: 'transparent',
                                         borderRadius: '32px',
@@ -1180,17 +1047,6 @@ const App = () => {
                                 </Box>
                             </Box>
                         </Paper>
-                        <Typography 
-                            variant="caption" 
-                            sx={{ 
-                                mt: 1, 
-                                color: 'text.secondary',
-                                textAlign: 'center',
-                                fontSize: '0.75rem'
-                            }}
-                        >
-                            AI can make mistakes. Check important info.
-                        </Typography>
                     </Box>
                 </Box>
             </Box>
@@ -1198,7 +1054,6 @@ const App = () => {
             <Settings 
                 open={settingsOpen} 
                 onClose={() => setSettingsOpen(false)} 
-                user={user} 
                 conversations={safeConversations}
                 onDeleteConversation={handleDeleteConversation}
                 currentConversation={currentConversationId}

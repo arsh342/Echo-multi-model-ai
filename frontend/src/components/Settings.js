@@ -40,7 +40,6 @@ const TabPanel = ({ children, value, index }) => (
 const Settings = ({ 
     open, 
     onClose, 
-    user, 
     onDeleteAllHistory,
     conversations,
     onDeleteConversation,
@@ -189,19 +188,18 @@ const Settings = ({
                 <TabPanel value={activeTab} index={0}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                         <Avatar 
-                            src={user.picture} 
                             sx={{ width: 64, height: 64 }}
                         >
-                            {!user.picture && <PersonIcon />}
+                            <PersonIcon />
                         </Avatar>
                         <Box>
-                            <Typography variant="h6">{user.name}</Typography>
-                            <Typography color="text.secondary">{user.email}</Typography>
+                            <Typography variant="h6">Echo User</Typography>
+                            <Typography color="text.secondary">Anonymous User</Typography>
                         </Box>
                     </Box>
                     <Divider sx={{ my: 2 }} />
                     <Typography variant="body2" color="text.secondary">
-                        Account managed by Firebase Authentication
+                        No authentication required. Your data is stored locally.
                     </Typography>
                 </TabPanel>
 

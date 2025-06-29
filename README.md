@@ -1,6 +1,6 @@
 # Echo 🌟
 
-A modern AI chat interface powered by multiple AI models (Google Gemini, OpenAI, Anthropic), featuring authentication, real-time chat, and smart context handling. Built with React, Node.js, and Material-UI, Echo offers a secure and elegant chat experience with **rich Markdown rendering**.
+A modern AI chat interface powered by multiple AI models (Google Gemini, OpenAI, Anthropic), featuring real-time chat and smart context handling. Built with React, Node.js, and Material-UI, Echo offers a secure and elegant chat experience with **rich Markdown rendering**.
 
 ## ✨ Key Features
 
@@ -33,9 +33,9 @@ A modern AI chat interface powered by multiple AI models (Google Gemini, OpenAI,
   - **Visual feedback** - Clear indicators when content is copied
   - **Social media integration** - Share to Twitter, LinkedIn, WhatsApp, and more
 
-- **Authentication & Security**
-  - Firebase Authentication integration
-  - JWT-based API security
+- **Simple & Secure**
+  - No authentication required - works immediately
+  - Local user ID persistence for data continuity
   - Input validation and sanitization
   - CORS protection
 
@@ -54,10 +54,7 @@ A modern AI chat interface powered by multiple AI models (Google Gemini, OpenAI,
 
 - Node.js (v16 or higher)
 - MongoDB database (local or cloud)
-- Firebase project
-- ~~Google Gemini API key~~
-- ~~(Optional) OpenAI API key~~
-- ~~(Optional) Anthropic API key~~
+- OpenRouter API key
 
 **Note:** API keys for Gemini, OpenAI, and Anthropic are pre-configured in the application.
 
@@ -81,20 +78,11 @@ Create `.env` files in both frontend and backend directories:
 **Frontend `.env**:**
 ```env
 REACT_APP_API_URL=http://localhost:8000
-REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-REACT_APP_FIREBASE_APP_ID=your_app_id
 ```
 
 **Backend `.env**:**
 ```env
 MONGODB_URI=your_mongodb_uri
-FIREBASE_PROJECT_ID=your_firebase_project_id
-FIREBASE_CLIENT_EMAIL=your_firebase_client_email
-FIREBASE_PRIVATE_KEY=your_firebase_private_key
 OPENROUTER_API_KEY=your_openrouter_api_key
 NODE_ENV=development
 ```
@@ -157,7 +145,6 @@ echo/
 │   └── src/          # Source files
 │       ├── components/  # React components
 │       ├── hooks/       # Custom hooks
-│       ├── firebase.js  # Firebase configuration
 │       └── theme.js     # Material-UI theme
 ├── backend/          # Node.js backend
 │   ├── server.js     # Express server
@@ -179,9 +166,6 @@ echo/
 #### Required Backend Variables:
 - `OPENROUTER_API_KEY` - Your OpenRouter API key (provides access to all AI models)
 - `MONGODB_URI` - Your MongoDB connection string
-- `FIREBASE_PROJECT_ID` - Your Firebase project ID
-- `FIREBASE_CLIENT_EMAIL` - Your Firebase service account client email
-- `FIREBASE_PRIVATE_KEY` - Your Firebase service account private key
 
 #### Optional Backend Variables:
 - `USE_REDIS` - Set to 'true' to enable Redis rate limiting
@@ -197,7 +181,6 @@ echo/
 ### Frontend
 - React 18
 - Material-UI
-- Firebase SDK
 - **React Markdown** - Rich markdown rendering
 - **React Syntax Highlighter** - Code syntax highlighting
 - **Remark GFM** - GitHub Flavored Markdown support
@@ -207,7 +190,6 @@ echo/
 - Express
 - OpenAI SDK (for OpenRouter integration)
 - MongoDB with Mongoose
-- Firebase Admin SDK
 - (Optional) Redis for rate limiting
 
 ## 🚀 Deployment
