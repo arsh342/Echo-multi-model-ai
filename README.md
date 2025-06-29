@@ -1,39 +1,65 @@
 # Echo 🌟
 
-A modern AI chat interface powered by Google's Gemini API, featuring authentication, real-time chat, and multiple AI model support. Built with React, Node.js, and Material-UI, Echo offers a secure and elegant chat experience with smart context handling and real-time responses.
+A modern AI chat interface powered by multiple AI models (Google Gemini, OpenAI, Anthropic), featuring authentication, real-time chat, and smart context handling. Built with React, Node.js, and Material-UI, Echo offers a secure and elegant chat experience with **rich Markdown rendering**.
 
 ## ✨ Key Features
 
 - **Modern UI/UX**
   - Material-UI based interface with dark theme
   - Responsive design for all devices
-  - Markdown support with syntax highlighting
+  - **Rich Markdown support with syntax highlighting**
+  - **Code block copy functionality**
+  - **Message copy and share buttons**
+  - **Conversation copy and share features**
   - Real-time chat interface with loading states
+  - **Beautiful typography and formatting**
+
+- **Enhanced Chat Experience**
+  - **Full Markdown rendering** (headers, lists, tables, links, etc.)
+  - **Syntax highlighting** for code blocks in 100+ languages
+  - **One-click code copying** with visual feedback
+  - **Message copy and share** on every chat bubble
+  - **Conversation export** with copy and share options
+  - **Responsive markdown layout** for mobile and desktop
+  - **GitHub Flavored Markdown (GFM)** support
+
+- **Copy & Share Features**
+  - **Individual message copying** - Copy any user question or AI response
+  - **Message sharing** - Share individual messages via native share API or social platforms
+  - **Code block copying** - One-click copy for all code snippets with syntax highlighting
+  - **Conversation copying** - Copy entire conversation context from settings
+  - **Conversation sharing** - Share full conversations on social media
+  - **Conversation title copying** - Quick copy conversation titles from sidebar
+  - **Visual feedback** - Clear indicators when content is copied
+  - **Social media integration** - Share to Twitter, LinkedIn, WhatsApp, and more
 
 - **Authentication & Security**
-  - Auth0 integration for secure authentication
+  - Firebase Authentication integration
   - JWT-based API security
-  - Rate limiting with Redis
+  - Input validation and sanitization
   - CORS protection
-  - Input validation
 
 - **AI Integration**
-  - Google Gemini API support
-  - Multiple AI model support (OpenAI, Anthropic)
+  - Google Gemini 2.5 Flash support (default)
+  - OpenAI GPT-4.1 integration
+  - Anthropic Claude Sonnet 4 integration
   - Smart context handling
   - Message history persistence with MongoDB
+  - **AI models instructed to respond with proper Markdown formatting**
+  - **OpenRouter API gateway** - Unified access to all AI models!
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- MongoDB database
-- Redis server
-- Auth0 account
-- Google Gemini API key
-- (Optional) OpenAI API key
-- (Optional) Anthropic API key
+- Node.js (v16 or higher)
+- MongoDB database (local or cloud)
+- Firebase project
+- ~~Google Gemini API key~~
+- ~~(Optional) OpenAI API key~~
+- ~~(Optional) Anthropic API key~~
+
+**Note:** API keys for Gemini, OpenAI, and Anthropic are pre-configured in the application.
 
 ### Installation
 
@@ -43,32 +69,37 @@ git clone https://github.com/yourusername/echo.git
 cd echo
 ```
 
-2. Install dependencies:
+2. Install all dependencies:
 ```bash
-npm run install:all
+npm run setup
 ```
 
 3. Set up environment variables:
 
-Frontend `.env`:
-```
+Create `.env` files in both frontend and backend directories:
+
+**Frontend `.env**:**
+```env
 REACT_APP_API_URL=http://localhost:8000
-REACT_APP_AUTH0_DOMAIN=your_auth0_domain
-REACT_APP_AUTH0_CLIENT_ID=your_auth0_client_id
-REACT_APP_AUTH0_AUDIENCE=your_auth0_audience
+REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
 ```
 
-Backend `.env`:
-```
-GOOGLE_GEN_AI_KEY=your_gemini_api_key
-OPENAI_API_KEY=your_openai_api_key
-ANTHROPIC_API_KEY=your_anthropic_api_key
+**Backend `.env**:**
+```env
 MONGODB_URI=your_mongodb_uri
-REDIS_URL=your_redis_url
-AUTH0_ISSUER_BASE_URL=your_auth0_domain
-AUTH0_AUDIENCE=your_auth0_audience
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+FIREBASE_PRIVATE_KEY=your_firebase_private_key
+OPENROUTER_API_KEY=your_openrouter_api_key
 NODE_ENV=development
 ```
+
+**Note:** API keys for Gemini, OpenAI, and Anthropic are pre-configured and don't need to be set.
 
 4. Start the development servers:
 ```bash
@@ -76,6 +107,44 @@ npm run dev
 ```
 
 The frontend will run on http://localhost:3001 and the backend on http://localhost:8000.
+
+## 🎨 Markdown Features
+
+Echo now supports rich Markdown rendering for AI responses:
+
+### Supported Markdown Elements
+- **Headers** (# ## ###)
+- **Bold and italic text** (**bold**, *italic*)
+- **Code blocks** with syntax highlighting (```javascript, ```python, etc.)
+- **Inline code** (`code`)
+- **Lists** (bullet points and numbered lists)
+- **Links** with proper styling
+- **Tables** with responsive design
+- **Blockquotes** with elegant styling
+- **Horizontal rules**
+
+### Code Block Features
+- **Syntax highlighting** for 100+ programming languages
+- **Copy button** for easy code copying
+- **Visual feedback** when code is copied
+- **Responsive design** for mobile devices
+- **Dark theme** optimized for code readability
+
+### Copy & Share Features
+- **Message Actions**: Every chat message (user questions and AI responses) has copy and share buttons
+- **Code Block Copying**: All code blocks have dedicated copy buttons with syntax highlighting
+- **Conversation Export**: Copy or share entire conversations from the settings panel
+- **Social Media Sharing**: Share content to Twitter, LinkedIn, WhatsApp, and other platforms
+- **Native Share API**: Uses device's native share functionality when available
+- **Visual Feedback**: Clear indicators (checkmarks) when content is successfully copied
+- **Mobile Optimized**: Message actions are more visible on mobile devices for better accessibility
+
+### AI Model Instructions
+All AI models are instructed to respond with proper Markdown formatting, ensuring:
+- Code blocks include language specification for syntax highlighting
+- Proper use of headers, lists, and formatting
+- Consistent markdown structure
+- Enhanced readability and user experience
 
 ## 🛠️ Development
 
@@ -87,55 +156,85 @@ echo/
 │   ├── public/        # Static files
 │   └── src/          # Source files
 │       ├── components/  # React components
-│       ├── contexts/    # React contexts
-│       └── services/    # API services
+│       ├── hooks/       # Custom hooks
+│       ├── firebase.js  # Firebase configuration
+│       └── theme.js     # Material-UI theme
 ├── backend/          # Node.js backend
 │   ├── server.js     # Express server
 │   └── db.js         # Database configuration
-└── package.json      # Root package.json
+└── package.json      # Root package.json with scripts
 ```
 
 ### Available Scripts
 
-- `npm run install:all` - Install all dependencies
+- `npm run setup` - Install all dependencies
 - `npm run dev` - Start both frontend and backend in development mode
-- `npm run start:frontend` - Start only the frontend
-- `npm run start:backend` - Start only the backend
+- `npm run dev:frontend` - Start only the frontend
+- `npm run dev:backend` - Start only the backend
 - `npm run build` - Build the frontend for production
-- `npm run deploy` - Build and start in production mode
 - `npm run clean` - Remove all node_modules directories
-- `npm run vercel-build` - Build for Vercel deployment
+
+### Environment Variables
+
+#### Required Backend Variables:
+- `OPENROUTER_API_KEY` - Your OpenRouter API key (provides access to all AI models)
+- `MONGODB_URI` - Your MongoDB connection string
+- `FIREBASE_PROJECT_ID` - Your Firebase project ID
+- `FIREBASE_CLIENT_EMAIL` - Your Firebase service account client email
+- `FIREBASE_PRIVATE_KEY` - Your Firebase service account private key
+
+#### Optional Backend Variables:
+- `USE_REDIS` - Set to 'true' to enable Redis rate limiting
+- `REDIS_URL` - Redis connection URL (if using rate limiting)
+
+**Note:** OpenRouter provides unified access to GPT-4.1, Claude Sonnet 4, and Gemini 2.5 Flash models.
+
+#### Required Frontend Variables:
+- `REACT_APP_API_URL` - Backend API URL
 
 ## 🔧 Dependencies
 
 ### Frontend
 - React 18
 - Material-UI
-- Auth0 React SDK
-- React Markdown
-- React Syntax Highlighter
+- Firebase SDK
+- **React Markdown** - Rich markdown rendering
+- **React Syntax Highlighter** - Code syntax highlighting
+- **Remark GFM** - GitHub Flavored Markdown support
 - UUID
 
 ### Backend
 - Express
-- Google Generative AI SDK
-- OpenAI SDK
-- Anthropic SDK
+- OpenAI SDK (for OpenRouter integration)
 - MongoDB with Mongoose
-- Redis
-- Auth0 JWT Bearer
-- Rate Limiter Flexible
+- Firebase Admin SDK
+- (Optional) Redis for rate limiting
 
 ## 🚀 Deployment
 
-The project is configured for deployment on Vercel. The `vercel-build` script handles the build process automatically. Make sure to set up the following environment variables in your Vercel project:
+### Production Build
 
-- `GOOGLE_GEN_AI_KEY` - Your Google Gemini API key
-- `MONGODB_URI` - Your MongoDB connection string
-- `REDIS_URL` - Your Redis connection URL
-- `AUTH0_ISSUER_BASE_URL` - Your Auth0 domain
-- `AUTH0_AUDIENCE` - Your Auth0 API audience
-- `NODE_ENV` - Set to "production"
+1. Build the frontend:
+```bash
+npm run build
+```
+
+2. Set `NODE_ENV=production` in your backend environment
+
+3. Start the backend server:
+```bash
+npm run start:backend
+```
+
+The backend will serve the built frontend files automatically in production mode.
+
+### Environment Setup for Production
+
+Make sure to set up the following environment variables in your production environment:
+
+- All required backend variables
+- `NODE_ENV=production`
+- `PORT=8000` (or your preferred port)
 
 ## 📝 License
 

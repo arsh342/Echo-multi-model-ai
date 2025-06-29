@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@auth0/auth0-react": "^2.3.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.1.1",
     "@mui/material": "^7.1.1",
+    "firebase": "^10.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
@@ -17,6 +17,7 @@
     "uuid": "^11.1.0"
   },
   "scripts": {
+    "dev": "set PORT=3001 && react-scripts start",
     "start": "set PORT=3001 && react-scripts start",
     "build": "react-scripts build",
     "build:production": "env-cmd -f .env.production react-scripts build",

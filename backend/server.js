@@ -5,13 +5,30 @@ require('dotenv').config();
 const path = require('path');
 
 // --- SDK and DB Imports ---
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const OpenAI = require('openai');
-const Anthropic = require('@anthropic-ai/sdk');
-const { connectDB, Chat, Feedback, UserConfig, encrypt, decrypt } = require('./db');
-const { auth } = require('express-oauth2-jwt-bearer');
-const redis = require('redis');
-const { RateLimiterRedis } = require('rate-limiter-flexible');
+const { connectDB, Chat, Feedback } = require('./db');
+const admin = require('firebase-admin');
+
+// --- OpenRouter Configuration ---
+const openrouter = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY,
+    defaultHeaders: {
+        "HTTP-Referer": "https://echo-ai-chat.vercel.app", // Your site URL
+        "X-Title": "Echo AI Chat", // Your site name
+    },
+});
+
+// --- Firebase Admin Initialization ---
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+        })
+    });
+}
 
 // --- Constants & Initial Setup ---
 const PORT = process.env.PORT || 8000;
@@ -40,7 +57,7 @@ app.options('*', cors(corsOptions));
 
 // --- Environment & Database ---
 const checkEnvironment = () => {
-    const requiredEnvVars = ['GOOGLE_GEN_AI_KEY', 'MONGODB_URI', 'AUTH0_AUDIENCE', 'AUTH0_ISSUER_BASE_URL', 'ENCRYPTION_KEY'];
+    const requiredEnvVars = ['OPENROUTER_API_KEY', 'MONGODB_URI', 'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
     const missing = requiredEnvVars.filter(varName => !process.env[varName]);
     if (missing.length > 0) {
         console.error('Missing required environment variables:', missing);
@@ -50,51 +67,78 @@ const checkEnvironment = () => {
 checkEnvironment();
 connectDB();
 
-// --- Auth0 Middleware ---
-const checkJwt = auth({
-    audience: process.env.AUTH0_AUDIENCE,
-    issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-    tokenSigningAlg: 'RS256'
-});
+// --- Firebase Auth Middleware ---
+const authenticateToken = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'No token provided' });
+        }
 
-// --- Rate Limiter Setup ---
-const redisClient = redis.createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
-redisClient.on('error', (err) => console.error('Redis Client Error', err));
-(async () => {
-    try {
-        await redisClient.connect();
-        console.log('Redis Connected...');
-    } catch (err) { console.error('Redis Connection Error:', err.message); }
-})();
-const rateLimiter = new RateLimiterRedis({
-    storeClient: redisClient,
-    keyPrefix: 'rate_limit',
-    points: 1500,
-    duration: 24 * 60 * 60,
-});
-const rateLimiterMiddleware = async (req, res, next) => {
-    try {
-        await rateLimiter.consume(req.ip);
+        const token = authHeader.split('Bearer ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        req.user = decodedToken;
         next();
-    } catch (err) {
-        res.status(429).json({ error: 'Too Many Requests' });
+    } catch (error) {
+        console.error('Firebase auth error:', error);
+        res.status(401).json({ error: 'Invalid token' });
     }
 };
+
+// --- Optional Rate Limiter Setup (Redis) ---
+let rateLimiterMiddleware = null;
+if (process.env.USE_REDIS === 'true' && process.env.REDIS_URL) {
+    try {
+        const redis = require('redis');
+        const { RateLimiterRedis } = require('rate-limiter-flexible');
+        
+        const redisClient = redis.createClient({ url: process.env.REDIS_URL });
+        redisClient.on('error', (err) => console.error('Redis Client Error', err));
+        
+        (async () => {
+            try {
+                await redisClient.connect();
+                console.log('Redis Connected...');
+            } catch (err) { 
+                console.error('Redis Connection Error:', err.message);
+                console.log('Continuing without rate limiting...');
+            }
+        })();
+        
+        const rateLimiter = new RateLimiterRedis({
+            storeClient: redisClient,
+            keyPrefix: 'rate_limit',
+            points: 1500,
+            duration: 24 * 60 * 60,
+        });
+        
+        rateLimiterMiddleware = async (req, res, next) => {
+            try {
+                await rateLimiter.consume(req.ip);
+                next();
+            } catch (err) {
+                res.status(429).json({ error: 'Too Many Requests' });
+            }
+        };
+    } catch (error) {
+        console.log('Redis not available, continuing without rate limiting...');
+    }
+}
 
 app.use(express.json());
 
 // --- ROUTES ---
 
-const chatMiddleware = [checkJwt];
-if (process.env.NODE_ENV === 'production') {
+const chatMiddleware = [authenticateToken];
+if (rateLimiterMiddleware && process.env.NODE_ENV === 'production') {
     chatMiddleware.push(rateLimiterMiddleware);
 }
 
 // --- /conversations Endpoint ---
 // This endpoint fetches a list of all unique conversations for the logged-in user.
-app.get('/conversations', checkJwt, async (req, res) => {
+app.get('/conversations', authenticateToken, async (req, res) => {
     try {
-        const userId = req.auth.payload.sub;
+        const userId = req.user.uid;
         const conversations = await Chat.aggregate([
             { $match: { userId: userId } },
             { $sort: { timestamp: 1 } },
@@ -113,9 +157,9 @@ app.get('/conversations', checkJwt, async (req, res) => {
 });
 
 // Delete all conversations for a user
-app.delete('/conversations', checkJwt, async (req, res) => {
+app.delete('/conversations', authenticateToken, async (req, res) => {
     try {
-        const userId = req.auth.payload.sub;
+        const userId = req.user.uid;
         await Chat.deleteMany({ userId });
         res.status(200).json({ success: true, message: 'All conversations deleted successfully.' });
     } catch (error) {
@@ -126,9 +170,9 @@ app.delete('/conversations', checkJwt, async (req, res) => {
 
 // --- /history/:conversationId Endpoint ---
 // This endpoint fetches the full message history for a single, specific conversation.
-app.get('/history/:conversationId', checkJwt, async (req, res) => {
+app.get('/history/:conversationId', authenticateToken, async (req, res) => {
     try {
-        const userId = req.auth.payload.sub;
+        const userId = req.user.uid;
         const { conversationId } = req.params;
         const chatHistory = await Chat.find({ userId, conversationId }).sort({ timestamp: 1 });
         res.json(chatHistory);
@@ -140,9 +184,9 @@ app.get('/history/:conversationId', checkJwt, async (req, res) => {
 
 // --- /feedback Endpoint ---
 // This endpoint saves user feedback (good/bad) for a specific message.
-app.post('/feedback', checkJwt, async (req, res) => {
+app.post('/feedback', authenticateToken, async (req, res) => {
     try {
-        const userId = req.auth.payload.sub;
+        const userId = req.user.uid;
         const { chatId, rating } = req.body;
         if (!chatId || !['good', 'bad'].includes(rating)) {
             return res.status(400).json({ error: 'Invalid feedback payload' });
@@ -155,84 +199,65 @@ app.post('/feedback', checkJwt, async (req, res) => {
     }
 });
 
-
-// ... (The /config and /chat endpoints for API keys and multi-model logic also exist here)
-
-// Get user config (to see which keys are set)
-app.get('/config', checkJwt, async (req, res) => {
-    const userId = req.auth.payload.sub;
-    const config = await UserConfig.findOne({ userId });
-    res.json({
-        hasOpenAIKey: !!config?.openaiApiKey,
-        hasAnthropicKey: !!config?.anthropicApiKey,
-        hasGeminiKey: !!config?.geminiApiKey,
-    });
-});
-
-// Save user config
-app.post('/config', checkJwt, async (req, res) => {
-    const userId = req.auth.payload.sub;
-    const { openaiApiKey, anthropicApiKey, geminiApiKey } = req.body;
-
-    const configUpdate = {};
-    if (openaiApiKey) configUpdate.openaiApiKey = encrypt(openaiApiKey);
-    if (anthropicApiKey) configUpdate.anthropicApiKey = encrypt(anthropicApiKey);
-    if (geminiApiKey) configUpdate.geminiApiKey = encrypt(geminiApiKey);
-
-    await UserConfig.findOneAndUpdate({ userId }, { $set: configUpdate }, { upsert: true });
-    res.status(200).json({ success: true, message: 'API keys saved successfully.' });
-});
-
 app.post('/chat', chatMiddleware, async (req, res) => {
     const { message, conversationId, model } = req.body;
-    const userId = req.auth.payload.sub;
+    const userId = req.user.uid;
 
     if (!message || !conversationId || !model) {
         return res.status(400).json({ error: 'Missing message, conversationId, or model' });
     }
 
     try {
-        const userConfig = await UserConfig.findOne({ userId });
         const chatHistory = await Chat.find({ userId, conversationId }).sort({ timestamp: 1 }).limit(MAX_HISTORY_LENGTH);
         
-        let responseText = '';
+        // Map model names to OpenRouter model identifiers
+        const modelMap = {
+            'openai': 'openai/gpt-4.1',
+            'anthropic': 'anthropic/claude-sonnet-4',
+            'gemini': 'google/gemini-2.5-flash'
+        };
 
-        if (model === 'openai') {
-            const apiKey = userConfig?.openaiApiKey ? decrypt(userConfig.openaiApiKey) : process.env.OPENAI_API_KEY;
-            if (!apiKey) throw new Error("OpenAI API key is not configured.");
-            
-            const openai = new OpenAI({ apiKey });
-            const messages = chatHistory.map(c => ({ role: c.role === 'user' ? 'user' : 'assistant', content: c.parts }));
-            messages.push({ role: 'user', content: message });
-            
-            const completion = await openai.chat.completions.create({ model: "gpt-4o", messages });
-            responseText = completion.choices[0].message.content || "";
-
-        } else if (model === 'anthropic') {
-            const apiKey = userConfig?.anthropicApiKey ? decrypt(userConfig.anthropicApiKey) : process.env.ANTHROPIC_API_KEY;
-            if (!apiKey) throw new Error("Anthropic API key is not configured.");
-
-            const anthropic = new Anthropic({ apiKey });
-            const messages = chatHistory.map(c => ({ role: c.role === 'user' ? 'user' : 'assistant', content: c.parts }));
-            
-            const completion = await anthropic.messages.create({
-                model: "claude-3-sonnet-20240229",
-                max_tokens: 1024,
-                messages: [...messages, { role: 'user', content: message }]
-            });
-            responseText = completion.content[0].text || "";
-            
-        } else { // Default to Gemini
-            const apiKey = userConfig?.geminiApiKey ? decrypt(userConfig.geminiApiKey) : process.env.GOOGLE_GEN_AI_KEY;
-            if (!apiKey) throw new Error("Gemini API key is not configured.");
-            
-            const gemini = new GoogleGenerativeAI(apiKey);
-            const geminiModel = gemini.getGenerativeModel({ model: "gemini-2.0-flash" });
-            const historyForGemini = chatHistory.map(c => ({ role: c.role === 'echo' ? 'model' : 'user', parts: [{ text: c.parts }] }));
-            const chat = geminiModel.startChat({ history: historyForGemini });
-            const result = await chat.sendMessage(message);
-            responseText = result.response.text() || "";
+        const openrouterModel = modelMap[model];
+        if (!openrouterModel) {
+            throw new Error(`Unsupported model: ${model}`);
         }
+
+        // Prepare messages for OpenRouter
+        const messages = chatHistory.map(c => ({ 
+            role: c.role === 'user' ? 'user' : 'assistant', 
+            content: c.parts 
+        }));
+        
+        // Add system message to instruct AI to use Markdown formatting
+        const systemMessage = {
+            role: 'system',
+            content: `You are a helpful AI assistant. Please respond using proper Markdown formatting:
+
+- Use **bold** for emphasis
+- Use *italic* for secondary emphasis
+- Use \`inline code\` for code snippets
+- Use \`\`\`language\ncode\n\`\`\` for code blocks with syntax highlighting
+- Use # ## ### for headers
+- Use - or * for bullet points
+- Use 1. 2. 3. for numbered lists
+- Use > for blockquotes
+- Use | for tables when appropriate
+- Use [link text](url) for links
+
+Always specify the programming language for code blocks (e.g., \`\`\`javascript, \`\`\`python, \`\`\`html, etc.) for proper syntax highlighting.`
+        };
+        
+        messages.unshift(systemMessage);
+        messages.push({ role: 'user', content: message });
+
+        // Make request to OpenRouter
+        const completion = await openrouter.chat.completions.create({
+            model: openrouterModel,
+            messages: messages,
+            max_tokens: 1024,
+        });
+
+        const responseText = completion.choices[0].message.content || "";
 
         // Save records to database
         await new Chat({ userId, conversationId, role: 'user', parts: message, timestamp: new Date() }).save();
@@ -248,9 +273,9 @@ app.post('/chat', chatMiddleware, async (req, res) => {
 });
 
 // --- /conversations/:conversationId DELETE Endpoint ---
-app.delete('/conversations/:conversationId', checkJwt, async (req, res) => {
+app.delete('/conversations/:conversationId', authenticateToken, async (req, res) => {
     try {
-        const userId = req.auth.payload.sub;
+        const userId = req.user.uid;
         const { conversationId } = req.params;
         
         // Delete all messages in the conversation
@@ -277,7 +302,6 @@ if (process.env.NODE_ENV === 'production') {
 
 // --- Global Error Handling ---
 app.use((err, req, res, next) => {
-    if (err.name === 'UnauthorizedError') return res.status(err.status).json({ error: 'Unauthorized', message: err.message });
     if (err.message === 'Not allowed by CORS') return res.status(403).json({ error: 'CORS Error', message: 'Origin not allowed' });
     next(err);
 });
@@ -286,7 +310,6 @@ app.use((err, req, res, next) => {
     console.error('Global error handler:', { message: err.message, stack: err.stack });
     res.status(500).json({ error: 'Internal Server Error', message: err.message || 'An unexpected error occurred' });
 });
-
 
 // --- Server Start ---
 app.listen(PORT, () => console.log(`🚀 Server is running on port ${PORT}`));

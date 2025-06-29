@@ -6,7 +6,6 @@ import {
     DialogContent,
     DialogActions,
     Button,
-    TextField,
     Typography,
     Divider,
     IconButton,
@@ -19,14 +18,18 @@ import {
     Paper,
     Tab,
     Tabs,
-    CircularProgress
+    CircularProgress,
+    Tooltip,
+    Menu,
+    MenuItem
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonIcon from '@mui/icons-material/Person';
-import KeyIcon from '@mui/icons-material/Key';
 import HistoryIcon from '@mui/icons-material/History';
-import SaveIcon from '@mui/icons-material/Save';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ShareIcon from '@mui/icons-material/Share';
+import CheckIcon from '@mui/icons-material/Check';
 
 const TabPanel = ({ children, value, index }) => (
     <Box hidden={value !== index} sx={{ p: 2 }}>
@@ -38,59 +41,21 @@ const Settings = ({
     open, 
     onClose, 
     user, 
-    userKeys, 
-    getAccessTokenSilently,
     onDeleteAllHistory,
     conversations,
-    onDeleteConversation
+    onDeleteConversation,
+    currentConversation,
+    chatHistory
 }) => {
     const [activeTab, setActiveTab] = useState(0);
-    const [apiKeys, setApiKeys] = useState({
-        openai: '',
-        anthropic: '',
-        gemini: ''
-    });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [anchorEl, setAnchorEl] = useState(null);
 
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
-    };
-
-    const handleApiKeyChange = (key) => (event) => {
-        setApiKeys(prev => ({
-            ...prev,
-            [key]: event.target.value
-        }));
-    };
-
-    const handleSaveApiKeys = async () => {
-        setIsLoading(true);
-        setError('');
-        setSuccess('');
-        
-        try {
-            const token = await getAccessTokenSilently();
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/config`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(apiKeys)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save API keys');
-            }
-
-            setSuccess('API keys saved successfully');
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     const handleDeleteAllHistory = async () => {
@@ -109,6 +74,67 @@ const Settings = ({
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleCopyConversation = async () => {
+        if (!chatHistory || chatHistory.length === 0) {
+            setError('No conversation to copy');
+            return;
+        }
+
+        try {
+            const conversationText = chatHistory.map(msg => 
+                `${msg.role === 'user' ? 'You' : 'Echo'}: ${msg.parts}`
+            ).join('\n\n');
+            
+            await navigator.clipboard.writeText(conversationText);
+            setCopied(true);
+            setSuccess('Conversation copied to clipboard');
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            setError('Failed to copy conversation');
+        }
+    };
+
+    const handleShareConversation = async () => {
+        if (!chatHistory || chatHistory.length === 0) {
+            setError('No conversation to share');
+            return;
+        }
+
+        try {
+            const conversationText = chatHistory.map(msg => 
+                `${msg.role === 'user' ? 'You' : 'Echo'}: ${msg.parts}`
+            ).join('\n\n');
+            
+            if (navigator.share) {
+                await navigator.share({
+                    title: 'Echo AI Chat Conversation',
+                    text: conversationText,
+                    url: window.location.href
+                });
+            } else {
+                setAnchorEl(document.querySelector('[data-testid="share-button"]'));
+            }
+        } catch (err) {
+            console.error('Failed to share conversation:', err);
+        }
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const shareToTwitter = () => {
+        const text = encodeURIComponent('Check out this AI conversation from Echo!');
+        window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(window.location.href)}`, '_blank');
+        handleMenuClose();
+    };
+
+    const shareToLinkedIn = () => {
+        const text = encodeURIComponent('Check out this AI conversation from Echo!');
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&title=${encodeURIComponent('Echo AI Chat')}&summary=${text}`, '_blank');
+        handleMenuClose();
     };
 
     return (
@@ -144,7 +170,6 @@ const Settings = ({
                         variant="fullWidth"
                     >
                         <Tab icon={<PersonIcon />} label="Profile" />
-                        <Tab icon={<KeyIcon />} label="API Keys" />
                         <Tab icon={<HistoryIcon />} label="History" />
                     </Tabs>
                 </Box>
@@ -176,52 +201,11 @@ const Settings = ({
                     </Box>
                     <Divider sx={{ my: 2 }} />
                     <Typography variant="body2" color="text.secondary">
-                        Account managed by Auth0
+                        Account managed by Firebase Authentication
                     </Typography>
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={1}>
-                    <Box sx={{ mb: 3 }}>
-                        <Typography variant="subtitle1" gutterBottom>
-                            API Keys
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" paragraph>
-                            Enter your API keys to enable different AI models
-                        </Typography>
-                        
-                        <TextField
-                            fullWidth
-                            label="OpenAI API Key"
-                            type="password"
-                            value={apiKeys.openai}
-                            onChange={handleApiKeyChange('openai')}
-                            margin="normal"
-                            helperText={userKeys.hasOpenAIKey ? "API key is set" : "API key is not set"}
-                        />
-                        
-                        <TextField
-                            fullWidth
-                            label="Anthropic API Key"
-                            type="password"
-                            value={apiKeys.anthropic}
-                            onChange={handleApiKeyChange('anthropic')}
-                            margin="normal"
-                            helperText={userKeys.hasAnthropicKey ? "API key is set" : "API key is not set"}
-                        />
-                        
-                        <TextField
-                            fullWidth
-                            label="Gemini API Key"
-                            type="password"
-                            value={apiKeys.gemini}
-                            onChange={handleApiKeyChange('gemini')}
-                            margin="normal"
-                            helperText={userKeys.hasGeminiKey ? "API key is set" : "API key is not set"}
-                        />
-                    </Box>
-                </TabPanel>
-
-                <TabPanel value={activeTab} index={2}>
                     <Box sx={{ mb: 3 }}>
                         <Typography variant="subtitle1" gutterBottom>
                             Conversation History
@@ -230,13 +214,45 @@ const Settings = ({
                             Manage your conversation history
                         </Typography>
 
+                        {/* Current Conversation Actions */}
+                        {currentConversation && chatHistory && chatHistory.length > 0 && (
+                            <Paper variant="outlined" sx={{ mb: 2, p: 2 }}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Current Conversation
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                    <Tooltip title={copied ? "Copied!" : "Copy conversation"}>
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            startIcon={copied ? <CheckIcon /> : <ContentCopyIcon />}
+                                            onClick={handleCopyConversation}
+                                        >
+                                            {copied ? "Copied!" : "Copy"}
+                                        </Button>
+                                    </Tooltip>
+                                    <Tooltip title="Share conversation">
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            startIcon={<ShareIcon />}
+                                            onClick={handleShareConversation}
+                                            data-testid="share-button"
+                                        >
+                                            Share
+                                        </Button>
+                                    </Tooltip>
+                                </Box>
+                            </Paper>
+                        )}
+
                         <Paper variant="outlined" sx={{ mb: 2 }}>
                             <List>
                                 {conversations.map((convo) => (
                                     <ListItem key={convo._id}>
                                         <ListItemText
                                             primary={convo.firstMessage || 'Untitled Conversation'}
-                                            secondary={new Date(convo.createdAt).toLocaleString()}
+                                            secondary={new Date(convo.timestamp).toLocaleString()}
                                         />
                                         <ListItemSecondaryAction>
                                             <IconButton 
@@ -272,17 +288,28 @@ const Settings = ({
                 p: 2
             }}>
                 <Button onClick={onClose}>Close</Button>
-                {activeTab === 1 && (
-                    <Button
-                        variant="contained"
-                        startIcon={isLoading ? <CircularProgress size={20} /> : <SaveIcon />}
-                        onClick={handleSaveApiKeys}
-                        disabled={isLoading}
-                    >
-                        Save API Keys
-                    </Button>
-                )}
             </DialogActions>
+
+            {/* Share Menu */}
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                PaperProps={{
+                    sx: {
+                        bgcolor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: 'divider'
+                    }
+                }}
+            >
+                <MenuItem onClick={shareToTwitter}>
+                    <Typography>Share on Twitter</Typography>
+                </MenuItem>
+                <MenuItem onClick={shareToLinkedIn}>
+                    <Typography>Share on LinkedIn</Typography>
+                </MenuItem>
+            </Menu>
         </Dialog>
     );
 };
