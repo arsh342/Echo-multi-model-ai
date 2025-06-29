@@ -485,26 +485,37 @@ const App = () => {
                 throw new Error(errorData.error || 'An error occurred.');
             }
 
-            // Get the response data and stream it character by character
+            // Get the response data and stream it more efficiently
             const responseData = await response.json();
             const fullResponse = responseData.message || "Response received";
             
             // Stop the thinking animation once we have the response
             setIsLoadingResponse(false);
             
-            // Stream the response character by character
+            // Ultra-optimized streaming with adaptive chunk sizes
+            const words = fullResponse.split(' ');
             let currentText = "";
-            const streamSpeed = 30; // milliseconds per character
             
-            for (let i = 0; i < fullResponse.length; i++) {
-                currentText += fullResponse[i];
-                const textToShow = currentText; // Capture current value
+            // Maximum speed streaming: very fast for all response types
+            const isLongResponse = words.length > 30;
+            const chunkSize = isLongResponse ? 8 : 5; // Much larger chunks for speed
+            const streamSpeed = isLongResponse ? 3 : 5; // Much faster timing
+            
+            // Stream in large chunks for maximum speed
+            for (let i = 0; i < words.length; i += chunkSize) {
+                const chunk = words.slice(i, i + chunkSize).join(' ');
+                currentText += (i === 0 ? '' : ' ') + chunk;
+                
                 setChatHistory(prev => prev.map(msg => 
                     msg._id === streamingMessageId 
-                        ? { ...msg, parts: textToShow }
+                        ? { ...msg, parts: currentText }
                         : msg
                 ));
-                await new Promise(resolve => setTimeout(resolve, streamSpeed));
+                
+                // Minimal delay for maximum speed
+                if (i + chunkSize < words.length) {
+                    await new Promise(resolve => setTimeout(resolve, streamSpeed));
+                }
             }
             
             // Mark streaming as complete
@@ -828,6 +839,14 @@ const App = () => {
                         }}>
                             {chatHistory.map((item, idx) => (
                                 <React.Fragment key={item._id || `temp_${Math.random()}`}> 
+                                    {/* Show thinking animation right before AI response bubbles */}
+                                    {item.role === 'assistant' && item.isStreaming && (
+                                        <ThinkingAnimation 
+                                            model={currentModel} 
+                                            isVisible={true} 
+                                        />
+                                    )}
+                                    
                                     <Box
                                         sx={{
                                             display: 'flex',
@@ -926,11 +945,13 @@ const App = () => {
                                 </React.Fragment>
                             ))}
                             
-                            {/* Thinking Animation */}
-                            <ThinkingAnimation 
-                                model={currentModel} 
-                                isVisible={isLoadingResponse} 
-                            />
+                            {/* Show thinking animation when loading response but no streaming message yet */}
+                            {isLoadingResponse && !chatHistory.some(item => item.isStreaming) && (
+                                <ThinkingAnimation 
+                                    model={currentModel} 
+                                    isVisible={true} 
+                                />
+                            )}
                         </Box>
                     )}
                 </Box>
