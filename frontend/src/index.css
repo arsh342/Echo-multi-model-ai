@@ -273,24 +273,32 @@ body {
 
 /* Custom scrollbar styling for code blocks */
 pre::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 4px;
+    height: 4px;
+    background: transparent;
 }
-
 pre::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
+    background: transparent;
 }
-
 pre::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    min-height: 20px;
 }
-
 pre::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255,255,255,0.18);
 }
-
 pre::-webkit-scrollbar-corner {
     background: transparent;
+}
+/* Hide scrollbar buttons (arrows) */
+pre::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+}
+/* Firefox */
+pre {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
 }

@@ -618,7 +618,7 @@ const App = () => {
             const text = chat.firstMessage || 'New Chat';
             if (navigator.share) {
                 navigator.share({
-                    title: 'Echo AI Chat',
+                    title: 'Bard AI Chat',
                     text,
                     url: window.location.href
                 });
@@ -642,17 +642,30 @@ const App = () => {
             flexDirection: 'column',
             bgcolor: 'background.paper'
         }}>
-            {/* Top section: User / Echo logo and New Chat button */}
+            {/* Top section: User / Bard logo and New Chat button */}
             <Box sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Avatar 
-                        src="https://i.postimg.cc/XqknDM5K/image.png"
+                        src="https://i.postimg.cc/SxbLKF1p/logo.png"
                         sx={{ width: 24, height: 24, mr: 1 }} 
                     />
-                    <Typography variant="subtitle1" noWrap>Echo</Typography>
+                    <Typography variant="subtitle1" noWrap>Bard</Typography>
                 </Box>
-                <IconButton onClick={handleNewConversation} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.1)' }}>
-                    <AddCircleOutlineIcon fontSize="small" sx={{ color: 'white' }} />
+                <IconButton 
+                    onClick={handleNewConversation} 
+                    size="large" 
+                    sx={{ 
+                        width: 56, 
+                        height: 56, 
+                        borderRadius: '16px', 
+                        boxShadow: 3, 
+                        transition: 'all 0.2s', 
+                        ml: 2,
+                        bgcolor: 'background.paper',
+                        '&:hover': { bgcolor: 'background.paper' }
+                    }}
+                >
+                    <AddCircleOutlineIcon fontSize="large" sx={{ color: 'white' }} />
                 </IconButton>
             </Box>
 
@@ -796,7 +809,7 @@ const App = () => {
                             left: { xs: 0, md: `${DRAWER_WIDTH}px` },
                             right: 0,
                             height: '80px',
-                            background: 'linear-gradient(180deg, rgba(19, 19, 20, 1) 0%, rgba(19, 19, 20, 0.8) 50%, rgba(19, 19, 20, 0) 100%)',
+                            background: 'background.default',
                             pointerEvents: 'none',
                             zIndex: 2
                         },
@@ -804,7 +817,7 @@ const App = () => {
                 >
                     {isInitialLoad || isLoadingHistory ? (
                         <Loading />
-                    ) : chatHistory.length === 0 && !isLoadingResponse ? (
+                    ) : safeConversations.length === 0 ? (
                         <Box sx={{ 
                             minHeight: '100%',
                             width: '100%',
@@ -817,7 +830,7 @@ const App = () => {
                         }}>
                             <Typography variant="h2" gutterBottom>Welcome</Typography>
                             <Typography variant="h6" color="text.secondary" sx={{mb: 3}}>
-                                Your AI-powered chat assistant
+                                Bard chat assistant
                             </Typography>
                         </Box>
                     ) : (
@@ -857,7 +870,7 @@ const App = () => {
                                         }}
                                     >
                                         <Paper elevation={1} sx={{ 
-                                            p: { xs: 1.5, sm: 2 }, 
+                                            p: { xs: 1.5, sm: 2, md: 2.5 }, 
                                             bgcolor: item.role === 'user' ? 'white' : '#131314', 
                                             color: item.role === 'user' ? 'background.default' : 'text.primary', 
                                             borderRadius: '32px',
@@ -869,7 +882,9 @@ const App = () => {
                                             boxShadow: 3,
                                             '& pre': {
                                                 margin: 0,
-                                                borderRadius: 1,
+                                                padding: 0,
+                                                border: 0,
+                                                borderRadius: 5,
                                                 overflow: 'auto'
                                             },
                                             '& code': {
@@ -916,7 +931,7 @@ const App = () => {
                                                     onClick={() => {
                                                         if (navigator.share) {
                                                             navigator.share({
-                                                                title: 'Echo AI Response',
+                                                                title: 'Bard AI Response',
                                                                 text: item.parts,
                                                                 url: window.location.href
                                                             });
@@ -968,7 +983,7 @@ const App = () => {
                         height: '60px',
                     }}
                 />
-                
+                 
                 {/* Input Bar Section */}
                 <Box
                     sx={{

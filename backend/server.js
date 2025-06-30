@@ -13,8 +13,8 @@ const openrouter = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: process.env.OPENROUTER_API_KEY,
     defaultHeaders: {
-        "HTTP-Referer": "https://echo-ai-chat.vercel.app", // Your site URL
-        "X-Title": "Echo AI Chat", // Your site name
+        "HTTP-Referer": "https://bard-ai-chat.vercel.app", // Your site URL
+        "X-Title": "Bard AI Chat", // Your site name
     },
 });
 

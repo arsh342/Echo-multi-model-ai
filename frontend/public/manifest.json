@@ -1,6 +1,6 @@
 {
-  "short_name": "Echo",
-  "name": "Echo - AI Assistant",
+  "short_name": "Bard",
+  "name": "Bard - AI Assistant",
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",

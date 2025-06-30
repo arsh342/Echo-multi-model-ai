@@ -1,6 +1,6 @@
-# Echo 🌟
+# Bard 🌟
 
-A modern AI chat interface powered by multiple AI models (Google Gemini, OpenAI, Anthropic), featuring real-time chat and smart context handling. Built with React, Node.js, and Material-UI, Echo offers a secure and elegant chat experience with **rich Markdown rendering**.
+A modern AI chat interface powered by multiple AI models (Google Gemini, OpenAI, Anthropic), featuring real-time chat and smart context handling. Built with React, Node.js, and Material-UI, Bard offers a secure and elegant chat experience with **rich Markdown rendering**.
 
 ## ✨ Key Features
 
@@ -98,7 +98,7 @@ The frontend will run on http://localhost:3001 and the backend on http://localho
 
 ## 🎨 Markdown Features
 
-Echo now supports rich Markdown rendering for AI responses:
+Bard now supports rich Markdown rendering for AI responses:
 
 ### Supported Markdown Elements
 - **Headers** (# ## ###)
