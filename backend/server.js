@@ -13,7 +13,7 @@ const openrouter = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: process.env.OPENROUTER_API_KEY,
     defaultHeaders: {
-        "HTTP-Referer": "https://bard-ai-chat.vercel.app", // Your site URL
+        "HTTP-Referer": "https://bardtriai.onrender.com", // Your site URL
         "X-Title": "Bard AI Chat", // Your site name
     },
 });
@@ -26,6 +26,7 @@ const MAX_HISTORY_LENGTH = 10;
 const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
+    'https://bardtriai.onrender.com',
     /* Add production URLs here */
 ];
 const corsOptions = {
