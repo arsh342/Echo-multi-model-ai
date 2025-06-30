@@ -16,6 +16,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 import ShareIcon from '@mui/icons-material/Share';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import MenuIcon from '@mui/icons-material/Menu';
 import Settings from './components/Settings';
 import useSpeechRecognition from './components/SpeechToText';
 import VoiceAnimation from './components/VoiceAnimation';
@@ -739,9 +740,38 @@ const App = () => {
         </Box>
     );
 
+    // --- Mobile Header ---
+    const MobileHeader = () => (
+        <Box
+            sx={{
+                display: { xs: 'flex', md: 'none' },
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                height: 56,
+                px: 2,
+                bgcolor: 'background.paper',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 1201
+            }}
+        >
+            <IconButton onClick={handleDrawerToggle} edge="start" sx={{ color: 'text.primary' }}>
+                <MenuIcon />
+            </IconButton>
+            <Avatar src="https://i.postimg.cc/SxbLKF1p/logo.png" sx={{ width: 32, height: 32, mx: 'auto' }} />
+            <Box sx={{ width: 40 }} /> {/* Spacer for symmetry */}
+        </Box>
+    );
+
     return (
         <Box sx={{ display: 'flex', height: '100vh' }}>
             <CssBaseline />
+            {/* Mobile Header */}
+            <MobileHeader />
             {/* Sidebar (Desktop) */}
             <Drawer
                 variant="permanent"
@@ -786,7 +816,8 @@ const App = () => {
                     height: '100vh',
                     width: { xs: '100%', md: `calc(100% - ${DRAWER_WIDTH}px)` },
                     ml: { xs: 0, md: `${DRAWER_WIDTH}px` },
-                    bgcolor: '#131314'
+                    bgcolor: '#131314',
+                    pt: { xs: 7, md: 0 } // Add top padding for mobile header
                 }}
             >
                 <Box
@@ -905,9 +936,9 @@ const App = () => {
                                         <Box sx={{
                                             display: 'flex',
                                             justifyContent: 'flex-start',
-                                            gap: 1,
-                                            mt: 1,
-                                            mb: 0.5,
+                                            gap: .2,
+                                            mt: 0.1,
+                                            mb: 0.1,
                                             width: '100%',
                                             ml: { xs: 2, sm: 3 },
                                         }}>
@@ -1008,23 +1039,25 @@ const App = () => {
                         zIndex: 2
                     }}>
                         {/* Input on top */}
-                        <Paper component="form" sx={{ 
-                            p: 0, 
-                            display: 'flex', 
-                            flexDirection: 'column',
-                            alignItems: 'stretch',
-                            borderRadius: '32px',
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0)',
-                            width: '100%',
-                            bgcolor: 'transparent',
-                            background: 'transparent',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            paddingTop: 1,
-                            minHeight: 80
-                        }} 
-                        style={{ background: 'transparent', backgroundColor: 'transparent' }}
-                        onSubmit={handleFormSubmit}>
+                        <Paper component="form" 
+                            className="input-bar-mobile"
+                            sx={{ 
+                                p: 0, 
+                                display: 'flex', 
+                                flexDirection: 'column',
+                                alignItems: 'stretch',
+                                borderRadius: '32px',
+                                boxShadow: '0 8px 32px rgba(0, 0, 0, 0)',
+                                width: '100%',
+                                bgcolor: 'transparent',
+                                background: 'transparent',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                paddingTop: 1,
+                                minHeight: 80
+                            }} 
+                            style={{ background: 'transparent', backgroundColor: 'transparent' }}
+                            onSubmit={handleFormSubmit}>
                             <TextField
                                 fullWidth
                                 multiline
