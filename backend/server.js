@@ -41,7 +41,10 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Accept'],
     credentials: true
 };
-app.use(cors(corsOptions));
+app.use(cors({
+    origin: 'https://bardtriai.onrender.com', // allow your deployed frontend
+    credentials: true
+}));
 app.options('*', cors(corsOptions));
 
 // --- Environment & Database ---
