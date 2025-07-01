@@ -17,6 +17,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import ShareIcon from '@mui/icons-material/Share';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 import Settings from './components/Settings';
 import useSpeechRecognition from './components/SpeechToText';
 import VoiceAnimation from './components/VoiceAnimation';
@@ -756,7 +757,7 @@ const App = () => {
                 top: 0,
                 left: 0,
                 right: 0,
-                zIndex: 1201
+                zIndex: 1200
             }}
         >
             <IconButton onClick={handleDrawerToggle} edge="start" sx={{ color: 'text.primary' }}>
@@ -797,14 +798,104 @@ const App = () => {
                 ModalProps={{ keepMounted: true }}
                 sx={{
                     display: { xs: 'block', md: 'none' },
-                    '& .MuiDrawer-paper': { 
-                        boxSizing: 'border-box', 
-                        width: DRAWER_WIDTH, 
+                    '& .MuiDrawer-paper': {
+                        boxSizing: 'border-box',
+                        width: '90vw',
+                        maxWidth: 400,
+                        minWidth: 0,
                         bgcolor: 'background.paper',
+                        height: '100vh',
+                        p: 0,
+                        position: 'relative',
                     },
+                    '& .MuiBackdrop-root': {
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        backdropFilter: 'blur(2px)',
+                    }
                 }}
             >
-                {drawerContent}
+                {/* Mobile Sidebar Header */}
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'background.paper',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 2
+                }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mx: 'auto' }}>
+                        <Avatar src="https://i.postimg.cc/SxbLKF1p/logo.png" sx={{ width: 36, height: 36, mr: 1 }} />
+                        <Typography variant="h6" noWrap sx={{ fontWeight: 700, fontSize: '1.2rem' }}>Bard</Typography>
+                    </Box>
+                    <IconButton onClick={handleDrawerToggle} sx={{ ml: 1, color: 'text.primary', width: 44, height: 44 }}>
+                        <CloseIcon fontSize="medium" />
+                    </IconButton>
+                </Box>
+                {/* Sidebar content */}
+                <Box sx={{
+                    flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: 'calc(100vh - 56px)',
+                    overflowY: 'auto',
+                    pt: 1,
+                    pb: 2
+                }}>
+                    {/* Conversation List */}
+                    <List sx={{ width: '100%' }}>
+                        {safeConversations.map((conv) => {
+                            const summary = conv.firstMessage
+                                ? conv.firstMessage.split(' ').slice(0, 3).join(' ') + (conv.firstMessage.split(' ').length > 3 ? '...' : '')
+                                : 'New Chat';
+                            return (
+                                <ListItem 
+                                    key={conv._id} 
+                                    disablePadding
+                                    sx={{
+                                        bgcolor: currentConversationId === conv._id ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                        borderRadius: '10px',
+                                        mx: 1,
+                                        mb: 0.5,
+                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                                        minHeight: 56
+                                    }}
+                                >
+                                    <ListItemButton onClick={() => handleSelectConversation(conv._id)} sx={{ pr: 1, minHeight: 56 }}>
+                                        <ListItemText primary={summary} primaryTypographyProps={{ noWrap: true, fontSize: '1.1rem' }} />
+                                        <Tooltip title="More options">
+                                            <IconButton 
+                                                size="large" 
+                                                onClick={(e) => { e.stopPropagation(); handleSidebarMenuOpen(e, conv._id); }}
+                                                sx={{ width: 44, height: 44 }}
+                                            >
+                                                <MoreVertIcon fontSize="medium" sx={{ color: 'text.secondary' }} />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </ListItemButton>
+                                </ListItem>
+                            );
+                        })}
+                    </List>
+                    {/* Settings and other actions at the bottom */}
+                    <Box sx={{ mt: 'auto', pb: 2 }}>
+                        <Divider sx={{ mx: 2, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+                        <List>
+                            <ListItem disablePadding>
+                                <ListItemButton onClick={() => setSettingsOpen(true)} sx={{ minHeight: 48 }}>
+                                    <ListItemIcon sx={{ minWidth: '40px' }}>
+                                        <SettingsIcon sx={{ color: 'text.secondary' }} />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Settings" />
+                                </ListItemButton>
+                            </ListItem>
+                        </List>
+                    </Box>
+                </Box>
             </Drawer>
             
             {/* Main Content */}
