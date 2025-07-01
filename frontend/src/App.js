@@ -21,7 +21,7 @@ import Settings from './components/Settings';
 import useSpeechRecognition from './components/SpeechToText';
 import VoiceAnimation from './components/VoiceAnimation';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = 'https://bardbackend.onrender.com';
 const DRAWER_WIDTH = 280;
 
 const models = {
